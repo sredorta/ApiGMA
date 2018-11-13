@@ -17,7 +17,7 @@ class CreateAccountsTable extends Migration
             $table->increments('id');
             $table->integer('user_id')->unsigned();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');   
-            $table->string('email',255); //We should use a random unique key instead of email !!!!!!!!!
+            $table->string('key',30)->unique(); //We should use a random unique key instead of email !!!!!!!!!
             $table->string('password',255);
             $table->string('access',50)->default("standard");            
             $table->timestamps();

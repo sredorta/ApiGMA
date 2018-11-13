@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 |
 */
 Route::get('users/list', 'UserController@index');
-Route::get('users/test', 'UserController@test');
+Route::get('auth/test', 'AccountController@test');
 
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {

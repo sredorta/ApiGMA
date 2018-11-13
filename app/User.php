@@ -2,12 +2,18 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 
-class User
+
+class User extends Model
 {
     use Notifiable;
 
+    //Return the accounts of the user
+    public function accounts() {
+        return $this->hasMany('App\Account');
+    }
 
     /**
      * The attributes that are mass assignable.

@@ -3,6 +3,7 @@
 use Illuminate\Database\Seeder;
 use App\User;
 use App\Account;
+use App\kubiikslib\Helper;
 
 class AccountTableSeeder extends Seeder
 {
@@ -23,7 +24,7 @@ class AccountTableSeeder extends Seeder
             $user = User::find($i);
             $account = Account::create([
                 'user_id' => $i,
-                'email' => $user->email,
+                'key' => Helper::generateRandomStr(30),
                 'password' => Hash::make('Secure0', ['rounds' => 12]),
                 'access' => "standard" //Config::get('constants.ACCESS_DEFAULT')
             ]);
