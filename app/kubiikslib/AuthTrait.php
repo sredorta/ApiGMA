@@ -12,44 +12,31 @@ use JWTAuth;
 use Illuminate\Http\Request;
 use Validator;
 use App\kubiikslib\Helper;
+use App\kubiikslib\EmailTrait;
 use App\User;
 use App\Account;
 
 trait AuthTrait {
  use ThrottlesLogins;           //Add Throttle traits
+ use EmailTrait;                //Add email traits
 
- protected $AuthTrait_user;     //Contains the user to avoid multiple searches
- protected $AuthTrait_accounts; //Contains the accounts to avoid multiple searches
- //Sets current user in order to avoid multiple query
- public function setCurrentUser($id) {
-  $this->AuthTrait_user = User::find($id);
-  $this->AuthTrait_accounts = $this->AuthTrait_user->accounts()->get();
- }
 
- //Generates a random password
- public function generatePassword() {
-   return Helper::generatePassword(10);
- }
+  //Generates a random password
+  public function generatePassword() {
+    return Helper::generatePassword(10);
+  }
 
- //Returns token life depending on keepconnected
- public function getTokenLife($keep = false) {
+  //Returns token life depending on keepconnected
+  public function getTokenLife($keep = false) {
     if (!$keep || $keep == null) 
       return 120; //120 minuntes if we are not keeping connection
     return 43200;           //30 days if we keep connected
- }
+  }
 
+  public function generateEmailKey() {
+    return Helper::generateRandomStr(30);
+  }
 
- //Get the selected account
- public function getAccount($access = null) {
-  return response()->json([
-    'response' => 'multiple_access',
-    'message' => 'test',
-  ],200);  
-  if ($access != null)  
-    return $this->AuthTrait_accounts->where('access', $access)->first();
-  else  
-    return $this->AuthTrait_accounts->first(); 
- }
 
   //Function required by the throttler
   public function username() {
@@ -101,7 +88,7 @@ trait AuthTrait {
             'mobile' => $request->get('mobile'),
             'email' => $request->get('email'),
             'avatar' => 'url(' . $request->get('avatar') . ')',
-            'emailValidationKey' => Str::random(50)
+            'emailValidationKey' => $this->generateEmailKey()
         ]);
         //We don't assign any Role as user has only 'default' access when creating it
 
@@ -112,31 +99,16 @@ trait AuthTrait {
         $user->accounts()->save($account);
   
         //THIRD: Send email with validation key
-/*        $data = [
-            'name' =>  $user->firstName,
-            'key' => Config::get('constants.API_URL') . '/api/auth/emailvalidate?id=' . 
-                    $user->id  .
-                    '&key=' .
-                    $user->emailValidationKey
-        ];*/
         $key = Config::get('constants.API_URL') . '/api/auth/emailvalidate?id=' . 
                 $user->id  .
                 '&key=' .
                 $user->emailValidationKey;
-
         $data = ['html' => "<div><h2>" . $user->firstName . ", bienvenu(e) au GMA500</h2>
         <p>Vous n'avez pas encore confirmé votre adresse électronique.</p>
         <p>Vous pouvez confirmer votre adresse électronique en cliquant sur le lien suivant</p>
         <a href=\"" . $key . "\">Confirmer mon adresse électronique</a>
         </div>"];
-
-        Mail::send('emails.generic',$data, function($message) use ($user)
-        {
-            $message->from(Config::get('constants.EMAIL_FROM_ADDRESS'), Config::get('constants.EMAIL_FROM_NAME'));
-            $message->replyTo(Config::get('constants.EMAIL_NOREPLY'));
-            $message->to($user->email);
-            $message->subject("GMA500: Confirmation de votre adresse électronique");
-        });   
+        $this->sendEmail($user->email, "GMA500: Confirmation de votre adresse électronique", $data);
 /*
         //Add user notification
         $notification = new Notification;
@@ -150,6 +122,39 @@ trait AuthTrait {
             'message' => 'signup_success',
         ], 200);
   }
+
+  /////////////////////////////////////////////////////////////////////////////////////////
+  // emailValidate:
+  //      id : Id of the user
+  //      key: Email validation key
+  //
+  //  We get id and email and we check if it matches the one in the db, if it's the case
+  //  we then set isEmailValidated to true
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////
+    public function emailValidate(Request $request) {
+      $validator = Validator::make($request->all(), [
+          'id' => 'required',
+          'key' => 'required'
+      ]);        
+      if ($validator->fails()) {
+          return view('emailvalidation')->with('result',0);
+      }        
+      //Check that we have user with the requested id
+      $user = User::where('id', '=', $request->get('id'))->where('emailValidationKey','=',$request->get('key'));
+      if (!$user->count()) {
+          return view('emailvalidation')->with('result',0);
+      }
+      //We are correct here so we update 
+      $user = $user->first();
+      //Regenerate a new key just in case we ask a new email
+      /////$profile->emailValidationKey = Str::random(50);
+      $user->isEmailValidated = 1;
+      $user->save();
+      
+      return view('emailvalidation')->with('result',1)->with('url',Config::get('constants.SITE_URL'));
+  }
+
   /////////////////////////////////////////////////////////////////////////////////////////
   //
   //  login:
@@ -197,22 +202,21 @@ trait AuthTrait {
       'message' => 'invalid_email_or_password'                                 
     ],400);     
   }
-
-  $this->setCurrentUser($user->id);
+  $accounts = $user->accounts()->get();
 
  //Checks if there are multiple accounts for the user with current access
-  if ($request->access == null && $this->AuthTrait_accounts->count()>1) {
+  if ($request->access == null && $accounts->count()>1) {
     return response()->json([
       'response' => 'multiple_access',
-      'message' => $this->AuthTrait_accounts->pluck('access')->toArray(),
+      'message' => $accounts->pluck('access')->toArray(),
     ],200);    
   }
 
   //Get current account
   if ($request->access !== null)
-    $account = $this->AuthTrait_accounts->where('access', $request->access)->first();
+    $account = $accounts->where('access', $request->access)->first();
   else 
-    $account = $this->AuthTrait_accounts->first();
+    $account = $accounts->first();
 
   //Make sure that there is one account we want to connect to
   if ($account == null) {
@@ -299,4 +303,67 @@ trait AuthTrait {
       return response()->json(null,200);
   }
 
+  /////////////////////////////////////////////////////////////////////////////////////////
+  //  resetPassword:
+  //      email : email of the user
+  //
+  //  We get id of the user from email change password and send email with new password
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////
+    public function resetPassword(Request $request) {
+      $validator = Validator::make($request->all(), [
+          'email' => 'required|email',
+          'access' => 'nullable|min:3'
+      ]);        
+      //Check parameters
+      if ($validator->fails()) {
+          return response()
+              ->json([
+                  'response' => 'error',
+                  'message' => 'validation_failed'
+              ], 400);
+      }
+      $user = User::where('email', $request->email)->get();
+      //Check that we have user with the requested email/access
+      if ($user->count() == 0) {
+        return response()
+            ->json([
+                'response' => 'error',
+                'message' => 'email_not_found'
+            ], 400);          
+      }
+      $user = $user->first();
+      $accounts = $user->accounts()->get();
+      //If access is not provided and we have multiple accounts return the list of available accounts
+      if ($request->access == null && $accounts->count()>1) {
+          $access = $accounts->pluck('access');
+          return response()->json([
+              'response' => 'multiple_access',
+              'message' => $access->toArray(),
+          ],200);
+      }
+      //Get the account
+      if ($request->access !== null) {
+          $account = $accounts->where('access', $request->access)->first();
+      } else {
+          $account = $accounts->first();
+      }
+
+      //Regenerate a new password
+      $newPass = $this->generatePassword();
+      $account->password = Hash::make($newPass, ['rounds' => 12]);
+      $account->save();
+
+      //Send email with new password
+      $data = ['html' => "<div><h2>Demande de nouveau mot de passe pour votre compte</h2>
+      <p>Votre nouveau mot de passe est: <span style=\"font-weight:bold\">". $newPass . "</span></p>
+      <p>Ce mot de passe concerne l'accés : ". $account->access . "</p>
+      </div>"];
+      $this->sendEmail($user->email, "GMA500: Votre nouveau mot de passe", $data);
+
+      return response()->json([
+          'response' => 'success',
+          'message' => 'password_reset_success'
+      ], 200); 
+  }
 }

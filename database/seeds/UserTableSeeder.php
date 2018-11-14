@@ -39,7 +39,7 @@ class UserTableSeeder extends Seeder
                 'email' => 'sergi.redorta' . $i . '@kubiiks.com',
                 'avatar' => $avatars[mt_rand(0,4)],
                 'isEmailValidated' => 1,
-                'emailValidationKey' => Str::random(50)
+                'emailValidationKey' => Str::random(30)
             ]);
         }        
     }
