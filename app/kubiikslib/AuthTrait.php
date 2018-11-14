@@ -15,6 +15,7 @@ use App\kubiikslib\Helper;
 use App\kubiikslib\EmailTrait;
 use App\User;
 use App\Account;
+use App\Attachment;
 
 trait AuthTrait {
  use ThrottlesLogins;           //Add Throttle traits
@@ -81,16 +82,27 @@ trait AuthTrait {
                     'errors' => $validator->errors()
                 ], 400);            
         }
-        //FIRST: we create a Profile
+
+
+
+        //FIRST: we create a User
         $user = User::create([
             'firstName' => $request->get('firstName'),           
             'lastName' => $request->get('lastName'),
             'mobile' => $request->get('mobile'),
             'email' => $request->get('email'),
-            'avatar' => 'url(' . $request->get('avatar') . ')',
             'emailValidationKey' => $this->generateEmailKey()
         ]);
-        //We don't assign any Role as user has only 'default' access when creating it
+        //We now create the Attachable with the image uploaded
+        $attachment = new Attachment;
+        if ($attachment->add($user->id, User::class, "avatar", $request->get('avatar'))== null) {
+            $user->delete();
+            return response()
+            ->json([
+                'response' => 'error',
+                'message' => 'attachable_failed'
+            ], 400);               
+        };
 
         //SECOND: we create the standard User (account)
         $account = new Account;
@@ -279,12 +291,20 @@ trait AuthTrait {
       //Get user id from the payload
       $payload = JWTAuth::parseToken()->getPayload();
       $user = User::find($payload->get('user_id'));
-      $user->access = Account::find($payload->get('user_id'))->access;
+      $user->account = Account::find($payload->get('account_id'))->access;
+      $user->avatar = $user->attachments->where('function','avatar')->first()->name;//->where('function','avatar')->get('name'); //Provide the path to the small user avatar
+      
       //Return all data
       /*$profile = Profile::with('roles')->with('groups')->with('notifications')->with('products')->find($user->profile_id);
       $notifsCount = Notification::where('profile_id', $user->profile_id)->where('isRead', 0)->count();
       $profile->access = $user->access;
       $profile->notifsUnreadCount = $notifsCount;*/
+      /*return response()
+      ->json([
+          'response' => 'error',
+          'message' => $payload->get('user_id')
+      ], 400);   */
+
       return response()->json($user,200);    
   } 
 

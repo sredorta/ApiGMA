@@ -48,6 +48,18 @@ return [
             'root' => storage_path('app'),
         ],
 
+        'images' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/images'),
+            'url' => '/images',
+            'visibility' => 'public',
+            /*'cache' => [
+                'store' => 'memcached',
+                'expire' => 600,
+                'prefix' => 'cache-prefix',
+            ],    */       
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

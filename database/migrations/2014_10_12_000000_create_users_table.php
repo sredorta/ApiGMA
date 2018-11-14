@@ -19,7 +19,6 @@ class CreateUsersTable extends Migration
             $table->string('lastName',50);
             $table->string('email',100)->unique(); //Email max length is 191 chars and cannot be changed
             $table->string('mobile',10)->unique();
-            $table->string('avatar',100); //Depends on avatar size 
             $table->boolean('isEmailValidated')->default(false);
             $table->string('emailValidationKey',50)->default('default');            
             $table->timestamps();

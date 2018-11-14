@@ -15,7 +15,8 @@ use Illuminate\Http\Request;
 */
 Route::get('users/list', 'UserController@index');
 Route::get('auth/test', 'AccountController@test');
-Route::get('image/test', 'UserController@imageTest');
+Route::get('image/test', 'AttachmentController@imageTest');
+
 
 
 Route::post('auth/login', 'AccountController@login');
