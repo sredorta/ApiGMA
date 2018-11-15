@@ -42,35 +42,37 @@ trait ImageTrait {
     }
 
     //Takes input image and saves it with different sizes
-    public function saveBase64Image($base64, $filename) {
+    public function saveBase64Image($base64, $filename, $path) {
         // create an image manager instance with favored driver
         $manager = new ImageManager(array('driver' => 'gd'));
-        $filename = $filename . "." .  $this->getBase64Extension($base64);
         $base64 = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64));
         // to finally create image instances
         $image = $manager->make($base64);   
         $width = $image->width();
         $height = $image->height();
 
-        $stream = $image->stream();
-        Storage::disk('images')->put($filename, $stream);
+        $stream = $image->stream('jpg',90);
+        Storage::disk('public')->put($path . $filename . "/orig.jpeg", $stream);
         //Now create the different sizes
         $image = $this->resizeImage($image,500);
-        $stream = $image->stream();
-        Storage::disk('images')->put($filename ."_500", $stream);
-        //$image->save('./' . $filename ."_500"); 
+        $stream = $image->stream('jpg',90);
+        Storage::disk('public')->put($path . $filename . "/500.jpeg", $stream);
+
         $image = $this->resizeImage($image,200);
-        $stream = $image->stream();
-        Storage::disk('images')->put($filename ."_200", $stream);
-        //$image->save('./' . $filename ."_200");  
+        $stream = $image->stream('jpg',90);
+        Storage::disk('public')->put($path . $filename . "/200.jpeg", $stream);
+
         $image = $this->resizeImage($image,100);
-        $stream = $image->stream();
-        Storage::disk('images')->put($filename ."_100", $stream);
-        //$image->save('./' . $filename ."_100");                 
+        $stream = $image->stream('jpg',90);
+        Storage::disk('public')->put($path . $filename . "/100.jpeg", $stream);
+
         $image = $this->resizeImage($image,50);
-        $stream = $image->stream();
-        Storage::disk('images')->put($filename ."_50", $stream);
-        //$image->save('./' . $filename ."_50"); 
+        $stream = $image->stream('jpg',90);
+        Storage::disk('public')->put($path . $filename . "/50.jpeg", $stream);
+
+        $image = $this->resizeImage($image,30);
+        $stream = $image->stream('jpg',90);
+        Storage::disk('public')->put($path . $filename . "/30.jpeg", $stream);
     }
 
 }

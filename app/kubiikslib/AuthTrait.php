@@ -95,7 +95,7 @@ trait AuthTrait {
         ]);
         //We now create the Attachable with the image uploaded
         $attachment = new Attachment;
-        if ($attachment->add($user->id, User::class, "avatar", $request->get('avatar'))== null) {
+        if ($attachment->add($user->id, User::class, "avatar","images/users/". $user->id . "/", $request->get('avatar'))== null) {
             $user->delete();
             return response()
             ->json([
@@ -159,8 +159,6 @@ trait AuthTrait {
       }
       //We are correct here so we update 
       $user = $user->first();
-      //Regenerate a new key just in case we ask a new email
-      /////$profile->emailValidationKey = Str::random(50);
       $user->isEmailValidated = 1;
       $user->save();
       
@@ -257,7 +255,7 @@ trait AuthTrait {
     ],401);
   }
 
-  //Check if isEmailValidated in the Profile if not invalidate token and return error
+  //Check if isEmailValidated in the User if not invalidate token and return error
   JWTAuth::setToken($token) ;
   $account = JWTAuth::toUser();
   $user = User::find($account->user_id);
@@ -292,8 +290,12 @@ trait AuthTrait {
       $payload = JWTAuth::parseToken()->getPayload();
       $user = User::find($payload->get('user_id'));
       $user->account = Account::find($payload->get('account_id'))->access;
-      $user->avatar = $user->attachments->where('function','avatar')->first()->name;//->where('function','avatar')->get('name'); //Provide the path to the small user avatar
-      
+      $avatar = $user->attachments->where('function','avatar')->first();
+      if ($avatar == null) {
+        $user->avatar = null;
+      } else {
+        $user->avatar = $avatar->filepath . $avatar->name;
+      }
       //Return all data
       /*$profile = Profile::with('roles')->with('groups')->with('notifications')->with('products')->find($user->profile_id);
       $notifsCount = Notification::where('profile_id', $user->profile_id)->where('isRead', 0)->count();
@@ -386,4 +388,134 @@ trait AuthTrait {
           'message' => 'password_reset_success'
       ], 200); 
   }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //  update:
+    //      firstName or lastName or email or mobile, or avatar or (password_new and password_old)
+    //
+    //  We need to be registered and we update the requested field
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////
+    public function update(Request $request) {
+        //Update firstName if is required
+        $validator = Validator::make($request->all(), [
+            'firstName' => 'required|string'
+        ]);        
+        if (!$validator->fails()) {
+            $user = User::find($request->get('myUser'));
+            $user->firstName = $request->firstName;
+            $user->save();
+            return response()->json([
+                'response' => 'success',
+                'message' => 'update_success',
+            ], 200);
+        }
+        //Update lastName if is required
+        $validator = Validator::make($request->all(), [
+            'lastName' => 'required|string'
+        ]);        
+        if (!$validator->fails()) {
+            $user = User::find($request->get('myUser'));
+            $user->lastName = $request->lastName;
+            $user->save();
+            return response()->json([
+                'response' => 'success',
+                'message' => 'update_success',
+            ], 200);            
+        }        
+        //Update avatar if is required
+        $validator = Validator::make($request->all(), [
+            'avatar' => 'required|string'
+        ]);        
+        if (!$validator->fails()) {
+            //Delete the current avatar attachable
+            $user = User::find($request->get('myUser'));
+            $attachment = $user->attachments->where('function','avatar')->first()->delete(); //Remove old avatar
+            $attachment = new Attachment;
+            $avatar = $attachment->add($user->id, User::class, "avatar","images/users/". $user->id . "/", $request->get('avatar')); //Add new one
+            $avatar = $avatar->filepath . $avatar->name;
+            return response()->json([
+                'response' => 'success',
+                'message' => 'update_success',
+                'avatar' => $avatar
+            ], 200);
+        } 
+
+        //Update mobile if is required
+        $validator = Validator::make($request->all(), [
+            'mobile' => 'required|numeric|unique:users'
+        ]);        
+        if (!$validator->fails()) {
+            $user = User::find($request->get('myUser'));
+            $user->mobile = $request->mobile;
+            $user->save();
+            return response()->json([
+                'response' => 'success',
+                'message' => 'update_success',
+            ], 200);
+        }  
+
+        //Update password
+        $validator = Validator::make($request->all(), [
+            'password_old' => 'required|string|min:5',
+            'password_new' => 'required|string|min:5'
+        ]);        
+        if (!$validator->fails()) {
+            //Check that password old matches
+            $account = Account::find($request->get('myAccount'))->first();
+            if (!Hash::check($request->get('password_old'), $account->password)) {
+                return response()->json([
+                    'response' => 'error',
+                    'message' => 'invalid_password'
+                ],400);
+            }
+            $account->password = Hash::make($request->get('password_new'), ['rounds' => 12]);
+            $account->save();
+            return response()->json([
+                'response' => 'success',
+                'message' => 'update_success',
+            ], 200);
+        }  
+
+        //Update email if is required and then we need to set email validated to false and logout and send email
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|unique:users'
+        ]);        
+        if (!$validator->fails()) {
+            $user = User::find($request->get('myUser'));
+            $user->isEmailValidated = 0;
+            $user->emailValidationKey = $this->generateEmailKey();
+            $user->email = $request->email;
+            $user->save();
+
+            //Send email with validation key
+            $key = Config::get('constants.API_URL') . '/api/auth/emailvalidate?id=' . 
+                    $user->id  .
+                    '&key=' .
+                    $user->emailValidationKey;
+            $data = ['html' => "<div><h2>Modification de compte email</h2>
+            <p>Vous n'avez pas encore confirmé votre adresse électronique.</p>
+            <p>Vous pouvez confirmer votre adresse électronique en cliquant sur le lien suivant</p>
+            <a href=\"" . $key . "\">Confirmer mon adresse électronique</a>
+            </div>"];
+            $this->sendEmail($user->email, "GMA500: Confirmation de votre adresse électronique", $data);
+
+
+            //Invalidate the token
+            JWTAuth::invalidate($request->bearerToken());
+            return response()->json([
+                'response' => 'success',
+                'message' => 'update_success',
+            ], 200);            
+        }
+        //If we got here, we have bad arguments
+        return response()->json([
+            'response' => 'error',
+            'message' => 'update_params_error',
+        ],400);
+
+    }
+
+
+
 }

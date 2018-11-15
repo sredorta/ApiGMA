@@ -48,24 +48,15 @@ return [
             'root' => storage_path('app'),
         ],
 
-        'images' => [
-            'driver' => 'local',
-            'root' => storage_path('app/public/images'),
-            'url' => '/images',
-            'visibility' => 'public',
-            /*'cache' => [
-                'store' => 'memcached',
-                'expire' => 600,
-                'prefix' => 'cache-prefix',
-            ],    */       
-        ],
-
+        //We define that the global public storage is in the public_path/storage
+        //Better than using a symlink
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'root' => public_path('storage'),
+            'url' => env('APP_URL'),
             'visibility' => 'public',
         ],
+
 
         's3' => [
             'driver' => 's3',
