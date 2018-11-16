@@ -26,7 +26,7 @@ class Unregistered
         try {
             JWTAuth::setToken($request->bearerToken()) ;
             //Get user id from the payload
-            $payload = JWTAuth::parseToken()->getPayload();
+            $payload = JWTAuth::setRequest($request)->parseToken()->getPayload();
 
         } catch (Exception $e) {
             if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException){
@@ -38,7 +38,7 @@ class Unregistered
         }
         return response()->json([
             'response' => 'error',
-            'message' => 'Cette action ne peut se faire que si vous n\'etes pas connecte'
+            'message' => 'already_loggedin'
         ],401);
     }
 }

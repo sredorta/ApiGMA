@@ -16,6 +16,7 @@ class AttachmentController extends Controller
 {
     use ImageTrait;
 
+
     //Add document
     public function addDocument(Request $request) {
 
@@ -32,7 +33,7 @@ class AttachmentController extends Controller
             ], 400); 
         }       
         $user = User::find($request->get('myUser'));
-        
+
         //Check if there is already a document with same function
         if ($user->attachments->where('function', $request->get('function'))->count()) {
             return response()

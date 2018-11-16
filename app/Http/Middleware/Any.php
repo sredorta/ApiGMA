@@ -23,7 +23,7 @@ class Any
             }    
             JWTAuth::setToken($request->bearerToken()) ;
             //Get user id from the payload
-            $payload = JWTAuth::parseToken()->getPayload();
+            $payload = JWTAuth::setRequest($request)->parseToken()->getPayload();
             $user = $payload->get('user_id');
             $account = $payload->get('account_id');
 

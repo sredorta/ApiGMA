@@ -13,10 +13,18 @@ use Illuminate\Http\Request;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+/*
+Route::get('test', 'UserController@test');
+
 Route::get('users/list', 'UserController@index');
+
+
 Route::get('auth/test', 'AccountController@test');
 Route::get('image/test', 'AttachmentController@imageTest');
+*/
 
+//Registered or not
 Route::group(['middleware' => 'any'], function ($router) {
     Route::get('auth/user', 'AccountController@getAuthUser');
 });
@@ -32,7 +40,7 @@ Route::group(['middleware' => 'unregistered'], function ($router) {
 Route::group(['middleware' => 'registered'], function ($router) {
     Route::post('auth/logout', 'AccountController@logout'); 
     Route::post('auth/update', 'AccountController@update'); 
-    
+
     //Document handling
     Route::post('user/document/add', 'AttachmentController@addDocument');
 });

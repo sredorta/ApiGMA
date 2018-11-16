@@ -55,17 +55,7 @@ trait AuthTrait {
   ////////////////////////////////////////////////////////////////////////////////////////
   public function signup(Request $request)
   {
-        //Check if user already registerd in the Profiles
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|string|email|max:255|unique:users',
-            'mobile' => 'required|unique:users'
-        ]);
-        if ($validator->fails()) {
-            return response()->json([
-                'response' => 'error',
-                'message' => 'user_already_registered'
-            ],400);
-        }       
+        //Check first that we got all parameters required
         //Check for all parameters
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
@@ -81,9 +71,19 @@ trait AuthTrait {
                     'message' => 'validation_failed',
                     'errors' => $validator->errors()
                 ], 400);            
-        }
+        }        
 
-
+        //Check if user already registerd in the Users
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|unique:users',
+            'mobile' => 'required|unique:users'
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'response' => 'error',
+                'message' => 'user_already_registered'
+            ],400);
+        }       
 
         //FIRST: we create a User
         $user = User::create([
@@ -191,8 +191,7 @@ trait AuthTrait {
     return response()
       ->json([
           'response' => 'error',
-          'message' => $validator->errors()->first(),
-          'errors' => $validator->errors()
+          'message' => 'validation_failed'
           ], 400);
   }
   //Get tokenLife depending on keepconnected
@@ -281,13 +280,18 @@ trait AuthTrait {
   //
   ////////////////////////////////////////////////////////////////////////////////////////
   public function getAuthUser(Request $request){
+
       if ($request->bearerToken() === null) {
           return response()->json(null,200);
       }
 
-      JWTAuth::setToken($request->bearerToken()) ;
+      JWTAuth::setToken($request->bearerToken());
+
       //Get user id from the payload
-      $payload = JWTAuth::parseToken()->getPayload();
+      $payload = JWTAuth::setRequest($request)->parseToken()->getPayload();
+      
+
+
       $user = User::find($payload->get('user_id'));
       $user->account = Account::find($payload->get('account_id'))->access;
       $avatar = $user->attachments->where('function','avatar')->first();
