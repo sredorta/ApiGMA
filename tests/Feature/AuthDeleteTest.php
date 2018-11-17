@@ -57,8 +57,12 @@ class AuthDeleteValidateTest extends TestCase {
             'attachable_type' => User::class
         ]);
 
-        //TODO: Verify anything that is being added roles,groups...
+        $this->assertDatabaseMissing('notifications', [
+            'user_id' => $user->id
+        ]);
+    //TODO: Verify anything that is being added roles,groups...
     }
+
 
 
     //Guard check

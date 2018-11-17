@@ -60,6 +60,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'any' => \App\Http\Middleware\Any::class,
         'unregistered' => \App\Http\Middleware\Unregistered::class,
-        'registered' => \App\Http\Middleware\Registered::class
+        'registered' => \App\Http\Middleware\Registered::class,
+        'admin' => \App\Http\Middleware\Admin::class, 
     ];
 }

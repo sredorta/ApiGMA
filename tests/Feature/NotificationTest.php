@@ -136,6 +136,8 @@ class NotificationsTest extends TestCase {
         $response = $this->get('api/notifications/getAll');
         $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => 'not_loggedin']);
     } 
+
+
 }
 
 

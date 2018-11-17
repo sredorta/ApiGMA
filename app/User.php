@@ -42,6 +42,11 @@ class User extends Model
     public function accounts() {
         return $this->hasMany('App\Account');
     }
+    
+    //Return the roles of the profile
+    public function roles() {
+        return $this->belongsToMany('App\Role');
+    }
 
     //Return the notifications of the user
     public function notifications() {
@@ -71,7 +76,7 @@ class User extends Model
     public function delete()
     {
         // delete all related roles (needs to be done with all related tables)
-        //$this->roles()->detach();
+        $this->roles()->detach();
         //$this->groups()->detach();
         $this->notifications()->delete();
         $this->attachments()->delete();
