@@ -8,6 +8,10 @@ namespace Tests;
 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Hash;
+use JWTAuth;
+use App\kubiikslib\Helper;
 use Artisan;
 use App\User;
 use App\Account;
@@ -89,9 +93,54 @@ abstract class TestCase extends BaseTestCase
         return $this->getAuthUser();
     }
 
+    /////////////////////////////////////////////////////////////////////////////////
+    //Create a user with multiple access and login with the required access
+    /////////////////////////////////////////////////////////////////////////////////
+    protected function loginAsMultiple($data = []) {
+        $default = [
+            'email' => 'sergi.redorta@hotmail.com',
+            'password'=> 'Secure0',
+            'access' => Config::get('constants.ACCESS_DEFAULT')
+        ];        
+        $signupData = [
+            'email' => 'sergi.redorta@hotmail.com',
+            'firstName' => 'Sergi',
+            'lastName' => 'Redorta',
+            'mobile' => '0623133212',
+            'password'=> 'Secure0'
+        ];  
+        $this->signup($signupData);
+        $user = User::all()->last();
+        //Add the other access types
+        $account = new Account;
+        $account->user_id = $user->id;
+        $account->key = Helper::generateRandomStr(30);
+        $account->password = Hash::make('Secure1', ['rounds' => 12]);
+        $account->access = Config::get('constants.ACCESS_MEMBER');
+        $user->accounts()->save($account);  
 
-    protected function trial() {
-        echo 'In the abstract';
+        $account = new Account;
+        $account->user_id = $user->id;
+        $account->key = Helper::generateRandomStr(30);
+        $account->password = Hash::make('Secure2', ['rounds' => 12]);
+        $account->access = Config::get('constants.ACCESS_ADMIN');
+        $user->accounts()->save($account);  
+        $this->login(array_merge($default, $data));
+        return $this->getAuthUser();
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////
+    // Logout current user
+    /////////////////////////////////////////////////////////////////////////////////
+    protected function logout() {
+        $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/logout');
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////
+    // Invalidate token
+    /////////////////////////////////////////////////////////////////////////////////
+    protected function invalidateToken() {
+        JWTAuth::invalidate($this->token);
     }
 
 

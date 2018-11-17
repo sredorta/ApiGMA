@@ -146,8 +146,8 @@ trait AuthTrait {
   ////////////////////////////////////////////////////////////////////////////////////////
     public function emailValidate(Request $request) {
       $validator = Validator::make($request->all(), [
-          'id' => 'required',
-          'key' => 'required'
+          'id' => 'required|numeric',
+          'key' => 'required|string|min:10'
       ]);        
       if ($validator->fails()) {
           return view('emailvalidation')->with('result',0);
@@ -235,6 +235,15 @@ trait AuthTrait {
       ],400); 
   }
 
+  //Check that password matches with the specified access
+  if (!Hash::check($request->get('password'), $account->password)) {
+    $this->incrementLoginAttempts($request); //Increments throttle count
+    return response()->json([
+        'response' => 'error',
+        'message' => 'invalid_password'
+    ],400);
+  }
+
   //Try to authenticate and get a token
   try {
     //We use key as is unique
@@ -254,9 +263,11 @@ trait AuthTrait {
     ],401);
   }
 
+
   //Check if isEmailValidated in the User if not invalidate token and return error
   JWTAuth::setToken($token) ;
   $account = JWTAuth::toUser();
+
   $user = User::find($account->user_id);
   if ($user->isEmailValidated == 0) {
       JWTAuth::invalidate($token);
@@ -290,8 +301,6 @@ trait AuthTrait {
       //Get user id from the payload
       $payload = JWTAuth::setRequest($request)->parseToken()->getPayload();
       
-
-
       $user = User::find($payload->get('user_id'));
       $user->account = Account::find($payload->get('account_id'))->access;
       $avatar = $user->attachments->where('function','avatar')->first();
@@ -310,7 +319,6 @@ trait AuthTrait {
           'response' => 'error',
           'message' => $payload->get('user_id')
       ], 400);   */
-
       return response()->json($user,200);    
   } 
 
@@ -403,7 +411,7 @@ trait AuthTrait {
     public function update(Request $request) {
         //Update firstName if is required
         $validator = Validator::make($request->all(), [
-            'firstName' => 'required|string'
+            'firstName' => 'required|string|min:2'
         ]);        
         if (!$validator->fails()) {
             $user = User::find($request->get('myUser'));
@@ -416,7 +424,7 @@ trait AuthTrait {
         }
         //Update lastName if is required
         $validator = Validator::make($request->all(), [
-            'lastName' => 'required|string'
+            'lastName' => 'required|string|min:2'
         ]);        
         if (!$validator->fails()) {
             $user = User::find($request->get('myUser'));
@@ -448,7 +456,18 @@ trait AuthTrait {
         //Update mobile if is required
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|numeric|unique:users'
-        ]);        
+        ]);       
+        if ($validator->fails()) {
+            $validatorU = Validator::make($request->all(), [
+                'mobile' => 'unique:users'
+            ]);
+            if ($validatorU->fails()) {
+                return response()->json([
+                    'response' => 'error',
+                    'message' => 'mobile_already_registered',
+                ],400);
+            }
+        }
         if (!$validator->fails()) {
             $user = User::find($request->get('myUser'));
             $user->mobile = $request->mobile;
@@ -483,8 +502,19 @@ trait AuthTrait {
 
         //Update email if is required and then we need to set email validated to false and logout and send email
         $validator = Validator::make($request->all(), [
-            'email' => 'required|unique:users'
+            'email' => 'required|email|unique:users'
         ]);        
+        if ($validator->fails()) {
+            $validatorU = Validator::make($request->all(), [
+                'email' => 'unique:users'
+            ]);
+            if ($validatorU->fails()) {
+                return response()->json([
+                    'response' => 'error',
+                    'message' => 'email_already_registered',
+                ],400);
+            }
+        }
         if (!$validator->fails()) {
             $user = User::find($request->get('myUser'));
             $user->isEmailValidated = 0;
@@ -515,7 +545,7 @@ trait AuthTrait {
         //If we got here, we have bad arguments
         return response()->json([
             'response' => 'error',
-            'message' => 'update_params_error',
+            'message' => 'validation_failed',
         ],400);
 
     }

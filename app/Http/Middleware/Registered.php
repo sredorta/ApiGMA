@@ -20,7 +20,7 @@ class Registered
             if ($request->bearerToken() === null) {
                 return response()->json([
                     'response' => 'error',
-                    'message' => 'Cette action ne peut se faire que si vous etes connecte'
+                    'message' => 'not_loggedin'
                 ],401);
             }    
             JWTAuth::setToken($request->bearerToken()) ;

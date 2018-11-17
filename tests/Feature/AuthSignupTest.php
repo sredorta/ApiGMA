@@ -3,6 +3,8 @@ namespace Test\Feature;
 
 use Tests\TestCase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Artisan;
 use App\User;
@@ -15,6 +17,7 @@ class AuthSignupTest extends TestCase {
         parent::setUp();
         
         Mail::fake();        //Avoid sending emails
+        //Storage::fake('public');     //Avoid writting to storage
         Artisan::call('migrate');
         //$this->loginAs();   //Create user and login and get current user in $this->user
     }
@@ -22,7 +25,7 @@ class AuthSignupTest extends TestCase {
     //Clean up after the test
     public function tearDown() {
         parent::tearDown();
-
+        //Storage::disk('public')->deleteDirectory('images');
     }
 
     ////////////////////////////////////////////////////////////////////////
