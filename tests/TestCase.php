@@ -8,6 +8,8 @@ namespace Tests;
 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Exceptions\Handler;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use JWTAuth;
@@ -145,6 +147,11 @@ abstract class TestCase extends BaseTestCase
 
 
 
-
-
 }
+
+
+
+
+
+
+

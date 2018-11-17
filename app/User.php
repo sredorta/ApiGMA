@@ -30,7 +30,7 @@ class User extends Model
 
 
     public function test() {
-        echo "This is a test";
+        
     }
 
     //Return the attachments if any
@@ -41,6 +41,11 @@ class User extends Model
     //Return the accounts of the user
     public function accounts() {
         return $this->hasMany('App\Account');
+    }
+
+    //Return the notifications of the user
+    public function notifications() {
+        return $this->hasMany('App\Notification');
     }
 
     /**
@@ -68,7 +73,7 @@ class User extends Model
         // delete all related roles (needs to be done with all related tables)
         //$this->roles()->detach();
         //$this->groups()->detach();
-        //$this->notifications()->delete();
+        $this->notifications()->delete();
         $this->attachments()->delete();
         $this->accounts()->delete();
 

@@ -259,7 +259,7 @@ class AuthLoginTest extends TestCase {
             'password'=> 'Secure0'            
         ];        
         $response = $this->get('api/auth/user');
-        $response->assertStatus(200)->assertJsonCount(0); //Empty json response
+        $response->assertStatus(204); //Empty json response
     }    
 
     public function testLoginAuthUserInvalidToken() {

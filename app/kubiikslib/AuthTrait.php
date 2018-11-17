@@ -16,6 +16,7 @@ use App\kubiikslib\EmailTrait;
 use App\User;
 use App\Account;
 use App\Attachment;
+use App\Notification;
 
 trait AuthTrait {
  use ThrottlesLogins;           //Add Throttle traits
@@ -121,13 +122,12 @@ trait AuthTrait {
         <a href=\"" . $key . "\">Confirmer mon adresse électronique</a>
         </div>"];
         $this->sendEmail($user->email, "GMA500: Confirmation de votre adresse électronique", $data);
-/*
+
         //Add user notification
         $notification = new Notification;
         $notification->text = "Bienvenu au site du GMA. Vous etes pré-inscrit";
-        $notification->isRead = 0;
-        $profile->notifications()->save($notification);
-*/
+        $user->notifications()->save($notification);
+
         //FINALLY:: Return ok code
         return response()->json([
             'response' => 'success',
@@ -293,7 +293,7 @@ trait AuthTrait {
   public function getAuthUser(Request $request){
 
       if ($request->bearerToken() === null) {
-          return response()->json(null,200);
+          return response()->json(null,204);
       }
 
       JWTAuth::setToken($request->bearerToken());
@@ -331,10 +331,10 @@ trait AuthTrait {
   ////////////////////////////////////////////////////////////////////////////////////////
   public function logout(Request $request){
       if ($request->bearerToken()=== null) {
-          return response()->json(null,200);
+          return response()->json([],204);
       }    
       JWTAuth::invalidate($request->bearerToken());
-      return response()->json(null,200);
+      return response()->json([],204);
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////
@@ -575,7 +575,7 @@ trait AuthTrait {
         JWTAuth::invalidate($request->bearerToken());
         User::find($request->get('myUser'))->delete();
         //Invalidate the token
-        return response()->json(null,200); 
+        return response()->json([],204); 
     }    
 
 

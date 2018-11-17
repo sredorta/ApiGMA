@@ -40,7 +40,7 @@ class AuthLogoutTest extends TestCase {
     public function testLogoutValid() {
         $this->loginAs();
         $response = $this->post('api/auth/logout');
-        $response->assertStatus(200)->assertExactJson([]);
+        $response->assertStatus(204);
     }
     
     public function testLogoutInValidNotLoggedIn() {

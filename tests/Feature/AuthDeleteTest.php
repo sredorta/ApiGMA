@@ -43,7 +43,7 @@ class AuthDeleteValidateTest extends TestCase {
         
         $response = $this->delete('api/auth/delete');
         
-        $response->assertStatus(200)->assertExactJson([]);
+        $response->assertStatus(204);
 
         $this->assertDatabaseMissing('users', [
             'id' => $user->id
@@ -57,6 +57,7 @@ class AuthDeleteValidateTest extends TestCase {
             'attachable_type' => User::class
         ]);
 
+        //TODO: Verify anything that is being added roles,groups...
     }
 
 
@@ -65,72 +66,4 @@ class AuthDeleteValidateTest extends TestCase {
         $response = $this->delete('api/auth/delete');
         $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => 'not_loggedin']);
     }
-
-
-/*
-    public function testResetPasswordValidateEmailNotFound() {
-        $this->signup();
-        $response = $this->post('api/auth/resetpassword', ['email'=> 'toto@test.com']);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'email_not_found']);
-    }   
-
-    public function testResetPasswordValidateValidSimpleAccess() {
-        $this->signup();
-        $user = User::all()->last();
-        $oldpass = $user->accounts()->first()->password;
-        $response = $this->post('api/auth/resetpassword', ['email'=> 'sergi.redorta@hotmail.com']);
-        $response->assertStatus(200)->assertExactJson(['response' => 'success', 'message' => 'password_reset_success']);
-        $this->assertDatabaseMissing('accounts', [
-            'email' => 'sergi.redorta@hotmail.com', 'password' => $oldpass
-        ]);
-    }    
-
-    public function testResetPasswordValidateInvalidAccess() {
-        $this->signup();
-        $user = User::all()->last();
-        $oldpass = $user->accounts()->first()->password;
-        $response = $this->post('api/auth/resetpassword', ['email'=> 'sergi.redorta@hotmail.com', 'access'=>'dummy']);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation_failed']);
-    }      
-
-    public function testResetPasswordValidateValidMultipleAccessNotSpecified() {
-        $this->signup();
-        $user = User::all()->last();
-        $account = new Account;
-        $account->user_id = $user->id;
-        $account->key = Helper::generateRandomStr(30);
-        $account->password = Hash::make('Secure10', ['rounds' => 12]);
-        $account->access = Config::get('constants.ACCESS_ADMIN');
-        $user->accounts()->save($account); 
-
-        $response = $this->post('api/auth/resetpassword', ['email'=> 'sergi.redorta@hotmail.com']);
-        $response->assertStatus(200)->assertExactJson(['response' => 'multiple_access', 'message' => [Config::get('constants.ACCESS_DEFAULT'), Config::get('constants.ACCESS_ADMIN')]]);
-    }    
-
-    public function testResetPasswordValidateValidMultipleAccessSpecified() {
-        $this->signup();
-        $user = User::all()->last();
-        $account = new Account;
-        $account->user_id = $user->id;
-        $account->key = Helper::generateRandomStr(30);
-        $oldpass = Hash::make('Secure10', ['rounds' => 12]);
-        $account->password = $oldpass;
-        $account->access = Config::get('constants.ACCESS_ADMIN');
-        $user->accounts()->save($account); 
-
-        $response = $this->post('api/auth/resetpassword', ['email'=> 'sergi.redorta@hotmail.com', 'access'=> Config::get('constants.ACCESS_ADMIN')]);
-        $response->assertStatus(200)->assertExactJson(['response' => 'success','message' => 'password_reset_success']);
-        $this->assertDatabaseMissing('accounts', [
-            'access' => Config::get('constants.ACCESS_ADMIN'),
-            'email' => 'sergi.redorta@hotmail.com', 'password' => $oldpass
-        ]);
-    }        
-
-    //Guard checkin
-    public function testResetPasswordInvalidGuard() {
-        $this->loginAs();
-        $response = $this->post('api/auth/resetpassword', ['email'=>'sergi.redorta@hotmail.com']);
-        $response->assertStatus(401)->assertExactJson(['response' => 'error','message' => 'already_loggedin']);
-    }    
-*/
 }

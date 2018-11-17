@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 */
 
 
+
+
 //Registered or not
 Route::group(['middleware' => 'any'], function ($router) {
     Route::get('auth/user', 'AccountController@getAuthUser');
@@ -27,12 +29,16 @@ Route::group(['middleware' => 'unregistered'], function ($router) {
     Route::get('auth/emailvalidate', 'AccountController@emailValidate');   
     Route::post('auth/resetpassword', 'AccountController@resetPassword');   //Resets password
 });
-
+ 
 //Only if we are registerd with any access
 Route::group(['middleware' => 'registered'], function ($router) {
-    Route::post('auth/logout', 'AccountController@logout'); 
+    Route::post('auth/logout', 'AccountController@logout');
     Route::post('auth/update', 'AccountController@update'); 
     Route::delete('auth/delete', 'AccountController@delete'); 
+    //Notifications part
+    Route::delete('notifications/delete', 'NotificationController@delete');
+    Route::post('notifications/markread', 'NotificationController@markAsRead');
+    Route::get('notifications/getAll', 'NotificationController@getAll');
     //  auth/delete
     //  all notifications, messages, imageables, attachables
 
@@ -41,9 +47,9 @@ Route::group(['middleware' => 'registered'], function ($router) {
 });
 
 
-/*
-Route::get('test', 'UserController@test');
 
+Route::get('test', 'UserController@test');
+/*
 Route::get('users/list', 'UserController@index');
 
 

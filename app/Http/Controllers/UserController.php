@@ -30,6 +30,10 @@ class UserController extends Controller
         $this->saveImage($avatar, 'toto.jpg');
 
     }
+    /*
+    public function test(Request $request) {
+        return response()->json(null,204);
+    }*/
 
 
  
