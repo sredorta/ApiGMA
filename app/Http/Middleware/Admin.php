@@ -40,7 +40,7 @@ class Admin
                 return response()->json(['error'=>'Something is wrong']);
             }
         }
-        if ($account->access != Config::get('constants.ACCESS_ADMIN')) {
+        if (Account::find($account)->access !== Config::get('constants.ACCESS_ADMIN')) {
             return response()->json([
                 'response' => 'error',
                 'message' => 'admin_required'
@@ -48,7 +48,7 @@ class Admin
         }
 
         //We should here send parameter profile_id to the route so that we don't need to find again
-        $request->attributes->add(['isLogged' => true, 'myUser' => $user->user_id, 'myAccount' => $account->account_id]);
+        $request->attributes->add(['isLogged' => true, 'myUser' => $user, 'myAccount' => $account]);
         return $next($request);
     }
 }

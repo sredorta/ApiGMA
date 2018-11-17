@@ -48,11 +48,11 @@ Route::group(['middleware' => 'registered'], function ($router) {
 
 //Returns all data from all users including roles and accounts
 Route::group(['middleware' => 'admin'], function ($router) {
-    Route::get('admin/roles' , 'RoleController@getRoles');              //Get all Roles
-    Route::post('admin/roles/attach' , 'RoleController@attachUser');    //Adds a role to a user
-    Route::post('admin/roles/detach' , 'RoleController@detachUser');    //Removes a role to a user
-    Route::post('admin/roles/create' , 'RoleController@create');        //Creates a new role
-    Route::post('admin/roles/delete' , 'RoleController@delete');        //Deletes a role
+    Route::get('roles' , 'RoleController@getRoles');              //Get all Roles
+    Route::post('roles/attach' , 'RoleController@attachUser');    //Adds a role to a user
+    Route::post('roles/detach' , 'RoleController@detachUser');    //Removes a role to a user
+    Route::post('roles/create' , 'RoleController@create');        //Creates a new role
+    Route::post('roles/delete' , 'RoleController@delete');        //Deletes a role
 });
 
 

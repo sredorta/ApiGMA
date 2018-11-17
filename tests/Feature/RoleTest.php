@@ -30,11 +30,11 @@ class RoleTest extends TestCase {
     public function tearDown() {
         parent::tearDown();
     }
-/*    Route::get('admin/roles' , 'RoleController@getRoles');              //Get all Roles
-    Route::post('admin/roles/attach' , 'RoleController@attachUser');    //Adds a role to a user
-    Route::post('admin/roles/detach' , 'RoleController@detachUser');    //Removes a role to a user
-    Route::post('admin/roles/create' , 'RoleController@create');        //Creates a new role
-    Route::post('admin/roles/delete' , 'RoleController@delete');        //Deletes a role*/
+/*    Route::get('roles' , 'RoleController@getRoles');              //Get all Roles
+    Route::post('roles/attach' , 'RoleController@attachUser');    //Adds a role to a user
+    Route::post('roles/detach' , 'RoleController@detachUser');    //Removes a role to a user
+    Route::post('roles/create' , 'RoleController@create');        //Creates a new role
+    Route::post('roles/delete' , 'RoleController@delete');        //Deletes a role*/
 
     //Guard check
     public function testRoleCreateValid() {
@@ -43,8 +43,8 @@ class RoleTest extends TestCase {
             'password'=> 'Secure2',
             'access' => Config::get('constants.ACCESS_ADMIN')]);
 
-        $response = $this->post('api/admin/roles/create', ['isUnique'=>true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
-        $response->assertStatus(401)->assertExactJson(['id' => 1, 'isUnique' => true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
+        $response = $this->post('api/roles/create', ['isUnique'=>true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
+        $response->assertStatus(200)->assertJson(['id' => 1, 'isUnique' => true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
     }
 
 
