@@ -277,7 +277,6 @@ class AuthLoginTest extends TestCase {
         $account->key = Helper::generateRandomStr(30);
         $account->password = Hash::make('Secure10', ['rounds' => 12]);
         $account->access = Config::get('constants.ACCESS_ADMIN');
-
         $user->accounts()->save($account); 
         $this->login(['password'=>'Secure10','access' => Config::get('constants.ACCESS_ADMIN')]);
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');

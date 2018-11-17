@@ -62,5 +62,17 @@ class User extends Model
         'emailValidationKey',
     ];
 
+    //User delete from db
+    public function delete()
+    {
+        // delete all related roles (needs to be done with all related tables)
+        //$this->roles()->detach();
+        //$this->groups()->detach();
+        //$this->notifications()->delete();
+        $this->attachments()->delete();
+        $this->accounts()->delete();
 
+        //Parent delete
+        parent::delete();
+    }
 }

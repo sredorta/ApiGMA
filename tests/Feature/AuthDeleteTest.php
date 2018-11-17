@@ -15,7 +15,7 @@ use Artisan;
 use App\User;
 use App\Account;
 
-class AuthResetPasswordValidateTest extends TestCase {
+class AuthDeleteValidateTest extends TestCase {
 
     //Database setup
     public function setUp() {
@@ -33,11 +33,41 @@ class AuthResetPasswordValidateTest extends TestCase {
         //Storage::deleteDirectory(base_path('tests/storage/images'));
     }
 
-    public function testResetPasswordValidateInvalidParams() {
-        $response = $this->post('api/auth/resetpassword', ['titi'=> '']);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation_failed']);
+    //Clean database and files after delete
+    public function testAuthDeleteValidCheckDataLeft() {
+        $this->signup(['email'=>"test@email.com", 'mobile'=>'0623133244']);
+        $this->loginAs();
+        //Add dummy attachment
+        $user = User::all()->last();
+        $user->attachments()->create(['filepath'=>'test', 'function' => 'test','name'=> 'test', 'type'=> 'test', 'extension'=> 'test' ]);
+        
+        $response = $this->delete('api/auth/delete');
+        
+        $response->assertStatus(200)->assertExactJson([]);
+
+        $this->assertDatabaseMissing('users', [
+            'id' => $user->id
+        ]);
+        $this->assertDatabaseMissing('accounts', [
+            'user_id' => $user->id
+        ]);
+        
+        $this->assertDatabaseMissing('attachments', [
+            'attachable_id' => $user->id,
+            'attachable_type' => User::class
+        ]);
+
     }
 
+
+    //Guard check
+    public function testAuthDeleteInvalidNotLogged() {
+        $response = $this->delete('api/auth/delete');
+        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => 'not_loggedin']);
+    }
+
+
+/*
     public function testResetPasswordValidateEmailNotFound() {
         $this->signup();
         $response = $this->post('api/auth/resetpassword', ['email'=> 'toto@test.com']);
@@ -102,5 +132,5 @@ class AuthResetPasswordValidateTest extends TestCase {
         $response = $this->post('api/auth/resetpassword', ['email'=>'sergi.redorta@hotmail.com']);
         $response->assertStatus(401)->assertExactJson(['response' => 'error','message' => 'already_loggedin']);
     }    
-
+*/
 }

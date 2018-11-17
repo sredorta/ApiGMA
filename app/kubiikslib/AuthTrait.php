@@ -382,6 +382,13 @@ trait AuthTrait {
       } else {
           $account = $accounts->first();
       }
+      if ($account == null) {
+        return response()
+            ->json([
+                'response' => 'error',
+                'message' => 'validation_failed'
+            ], 400);   
+      }
 
       //Regenerate a new password
       $newPass = $this->generatePassword();
@@ -550,6 +557,26 @@ trait AuthTrait {
 
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  delete:
+    //
+    //  Invalidates the token and deletes all data of a user and the associated data
+    //  You need to be registered to be able to delete it and some cases will prevent deletion
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////
+    //Delete profile and all associated data
+    public function delete(Request $request) { 
+        //Check that user doesn't have any product assigned
+        /*if (User::find($request->get('myUser'))->products()->count()>0) {
+            return response()->json(["response" => "error", "message"=>"owning_products"],400);
+        }*/
+        //Invalidate the token
+        JWTAuth::invalidate($request->bearerToken());
+        User::find($request->get('myUser'))->delete();
+        //Invalidate the token
+        return response()->json(null,200); 
+    }    
 
 
 }
