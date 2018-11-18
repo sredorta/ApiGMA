@@ -18,6 +18,10 @@ class Admin
      */
     public function handle($request, Closure $next)
     {
+        //Set language from HTTP header
+        if ($request->header('Accept-Language') !== null) {
+            app::setLocale(substr($request->header('Accept-Language'),0,2));
+        }         
         try {
             if ($request->bearerToken() === null) {
                 return response()->json([
@@ -33,13 +37,18 @@ class Admin
 
         } catch (Exception $e) {
             if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException){
-                return response()->json(['error'=>'Token is Invalid']);
+                return response()->json(['error'=>'token_invalid']);
             }else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenExpiredException){
-                return response()->json(['error'=>'Token is Expired']);
+                return response()->json(['error'=>'token_expired']);
             }else{
-                return response()->json(['error'=>'Something is wrong']);
+                return response()->json(['error'=>'token_error']);
             }
         }
+        //Get the language from the user
+        $user = User::find($user);
+        if ($user) {
+             app::setLocale($user->language);
+        }         
         if (Account::find($account)->access !== Config::get('constants.ACCESS_ADMIN')) {
             return response()->json([
                 'response' => 'error',
@@ -49,6 +58,7 @@ class Admin
 
         //We should here send parameter profile_id to the route so that we don't need to find again
         $request->attributes->add(['isLogged' => true, 'myUser' => $user, 'myAccount' => $account]);
+
         return $next($request);
     }
 }

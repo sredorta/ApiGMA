@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
-use App;
 use App\User;
 use App\Account;
 use App\kubiikslib\Helper;
 use App\kubiikslib\AuthTrait;
 use App\kubiikslib\ImageTrait;
 use JWTAuth;
+use App;
 
 use Intervention\Image\ImageManager;
 
@@ -33,9 +33,9 @@ class UserController extends Controller
     }
     
     public function test(Request $request) {
-       // $lang = 'fr'; //this value should dynamic
-        //app::setLocale($lang); 
-        return response()->json(["string"=>"test"],204);
+        $lang = 'en'; //this value should dynamic
+        app::setLocale($lang); 
+        return response()->json(["string"=> __('auth.test', ['param'=>'sergi'])],200);
     }
 
 

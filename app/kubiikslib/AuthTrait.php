@@ -351,11 +351,7 @@ trait AuthTrait {
       ]);        
       //Check parameters
       if ($validator->fails()) {
-          return response()
-              ->json([
-                  'response' => 'error',
-                  'message' => 'validation_failed'
-              ], 400);
+          return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
       }
       $user = User::where('email', $request->email)->get();
       //Check that we have user with the requested email/access
@@ -550,10 +546,7 @@ trait AuthTrait {
             ], 200);            
         }
         //If we got here, we have bad arguments
-        return response()->json([
-            'response' => 'error',
-            'message' => 'validation_failed',
-        ],400);
+        return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
 
     }
 

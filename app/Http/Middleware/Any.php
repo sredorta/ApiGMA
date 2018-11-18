@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 use JWTAuth;
 use Closure;
 use App\User;
+use App;
 
 class Any
 {
@@ -16,6 +17,10 @@ class Any
      */
     public function handle($request, Closure $next)
     {
+        //Set language from HTTP header
+        if ($request->header('Accept-Language') !== null) {
+            app::setLocale(substr($request->header('Accept-Language'),0,2));
+        } 
         try {
             if ($request->bearerToken() === null) {
                 $request->attributes->add(['isLogged' => false, 'myUser' => null, 'myAccount'=>null]);
@@ -31,8 +36,13 @@ class Any
             $request->attributes->add(['isLogged' => false, 'myUser' => null, 'myAccount' =>null]);
             return $next($request);
         }
-        //We should here send user_id and account_id
+        //Return user_id and account_id
         $request->attributes->add(['isLogged' => true, 'myUser' => $user, 'myAccount'=> $account]);
+        //Get the language from the user
+        $user = User::find($user);
+        if ($user) {
+            app::setLocale($user->language);
+        } 
         return $next($request);
     }
 }

@@ -2,9 +2,11 @@
 
 namespace App\Http\Middleware;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Request;
 use JWTAuth;
 use Closure;
 use App\User;
+use App;
 
 //Checks that user is unregistered
 
@@ -17,8 +19,13 @@ class Unregistered
      * @param  \Closure  $next
      * @return mixed
      */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
+        //Set language from HTTP header
+        if ($request->header('Accept-Language') !== null) {
+            app::setLocale(substr($request->header('Accept-Language'),0,2));
+        } 
+
         $request->attributes->add(['isLogged' => false]);
         if ($request->bearerToken() === null) {
             return $next($request);
@@ -31,11 +38,16 @@ class Unregistered
         } catch (Exception $e) {
             if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException){
                 return $next($request);
-            }else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenExpiredException){
+            } else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenExpiredException){
                 return $next($request);
-            }else{
+            } else {
+                return $next($request);
             }
         }
+        $user = User::find($user);
+        if ($user) {
+            app::setLocale($user->language);
+        }   
         return response()->json([
             'response' => 'error',
             'message' => 'already_loggedin'
