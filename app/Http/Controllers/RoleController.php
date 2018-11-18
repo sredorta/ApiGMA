@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Validator;
 use App\Role;
 use App\User;
@@ -22,6 +23,7 @@ class RoleController extends Controller
             'user_id' => 'required|numeric',
             'role_id' => 'required|numeric'
         ]);
+
         if ($validator->fails()) {
             return response()
             ->json([
@@ -29,7 +31,19 @@ class RoleController extends Controller
                 'message' => 'validation_failed'
             ], 400);   
         }          
+        $role = Role::find($request->role_id);
         $user = User::find($request->user_id);
+        if (!$user || !$role) {
+            return response()
+            ->json([
+                'response' => 'error',
+                'message' => 'validation_failed'
+            ], 400);             
+        }
+        //Remove precedent attachment if is unique
+        if ($role->isUnique) {
+            DB::table('role_user')->where('role_id', $role->id)->delete();
+        }
         $notif = new Notification;
         $notif->text = "Le role de " . Role::find($request->role_id)->name . " vous à été assigné";
         $user->notifications()->save($notif);
@@ -49,11 +63,19 @@ class RoleController extends Controller
                 'response' => 'error',
                 'message' => 'validation_failed'
             ], 400);   
-        }          
-        $user = User::find($request->profile_id);
-        $user->roles()->detach($request->role_id);
+        }
+        $role = Role::find($request->role_id);
+        $user = User::find($request->user_id);
+        if (!$user || !$role) {
+            return response()
+            ->json([
+                'response' => 'error',
+                'message' => 'validation_failed'
+            ], 400);             
+        }      
+        $user->roles()->detach($role->id);
         $notif = new Notification;
-        $notif->text = "Le role de " . Role::find($request->role_id)->name . " vous à été enlevé";
+        $notif->text = "Le role de " . Role::find($role->id)->name . " vous à été enlevé";
         $user->notifications()->save($notif);
         return response()->json(null,204); 
     }
@@ -61,12 +83,16 @@ class RoleController extends Controller
     //create a new Role
     public function create(Request $request) {
         $validator = Validator::make($request->all(), [
-            'name' => 'string|min:3|max:50',
+            'name' => 'required|string|min:3|max:50',
             'isUnique' => 'nullable|boolean',
             'description' => 'required|min:10|max:500'
         ]);
         if ($validator->fails()) {
-            return response()->json($validator->errors(),400);
+            return response()
+            ->json([
+                'response' => 'error',
+                'message' => 'validation_failed'
+            ], 400);   
         }
         $isUnique = $request->isUnique;
         if ($request->isUnique == null) $request->isUnique = false;
@@ -84,10 +110,22 @@ class RoleController extends Controller
             'id' => 'required|numeric'
         ]);
         if ($validator->fails()) {
-            return response()->json($validator->errors(),400);
+            return response()
+            ->json([
+                'response' => 'error',
+                'message' => 'validation_failed'
+            ], 400);  
         }          
         //When a role is removed all attached roles in the pivot are removed !
+        $role = Role::find($request->id);
+        if ($role == null) {
+            return response()
+            ->json([
+                'response' => 'error',
+                'message' => 'validation_failed'
+            ], 400);  
+        }
         Role::find($request->id)->delete();
-        return response()->json(null,203); 
+        return response()->json(null,204); 
     }       
 }

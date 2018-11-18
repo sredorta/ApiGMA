@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
+use App;
 use App\User;
 use App\Account;
 use App\kubiikslib\Helper;
@@ -30,10 +31,12 @@ class UserController extends Controller
         $this->saveImage($avatar, 'toto.jpg');
 
     }
-    /*
+    
     public function test(Request $request) {
-        return response()->json(null,204);
-    }*/
+       // $lang = 'fr'; //this value should dynamic
+        //app::setLocale($lang); 
+        return response()->json(["string"=>"test"],204);
+    }
 
 
  

@@ -38,7 +38,7 @@ Route::group(['middleware' => 'registered'], function ($router) {
     //Notifications part
     Route::delete('notifications/delete', 'NotificationController@delete');
     Route::post('notifications/markread', 'NotificationController@markAsRead');
-    Route::get('notifications/getAll', 'NotificationController@getAll');
+    Route::get('notifications', 'NotificationController@getAll');
     //  auth/delete
     //  all notifications, messages, imageables, attachables
 
@@ -52,7 +52,7 @@ Route::group(['middleware' => 'admin'], function ($router) {
     Route::post('roles/attach' , 'RoleController@attachUser');    //Adds a role to a user
     Route::post('roles/detach' , 'RoleController@detachUser');    //Removes a role to a user
     Route::post('roles/create' , 'RoleController@create');        //Creates a new role
-    Route::post('roles/delete' , 'RoleController@delete');        //Deletes a role
+    Route::delete('roles/delete' , 'RoleController@delete');        //Deletes a role
 });
 
 

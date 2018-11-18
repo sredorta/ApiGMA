@@ -113,7 +113,7 @@ class NotificationsTest extends TestCase {
         $this->loginAs();
         $this->logout();
         $this->expectException(\Tymon\JWTAuth\Exceptions\TokenBlacklistedException::class);
-        $response = $this->get('api/notifications/getAll');
+        $response = $this->get('api/notifications');
         dd($response->json());
     }      
 
@@ -124,7 +124,7 @@ class NotificationsTest extends TestCase {
         $notification->user_id = 1;
         $notification->text = "Test of notif";
         $notification->save();
-        $response = $this->get('api/notifications/getAll');
+        $response = $this->get('api/notifications');
         $this->assertDatabaseHas('notifications', [
             'user_id' => $user->id, "text" => "Test of notif"
         ]);
@@ -133,7 +133,7 @@ class NotificationsTest extends TestCase {
         ]);
     } 
     public function testNotificationsgetAllNotLoggedInTwo() {
-        $response = $this->get('api/notifications/getAll');
+        $response = $this->get('api/notifications');
         $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => 'not_loggedin']);
     } 
 
