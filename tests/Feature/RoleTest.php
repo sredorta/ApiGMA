@@ -383,7 +383,7 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_DEFAULT')]);
 
         $response = $this->post('api/roles/create', ['isUnique'=>true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'admin_required']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.admin_required')]);
     }
 
     public function testRoleCreateInValidLoggedInAsMember() {
@@ -393,12 +393,12 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_MEMBER')]);
 
         $response = $this->post('api/roles/create', ['isUnique'=>true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'admin_required']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.admin_required')]);
     }    
 
     public function testRoleCreateInValidNotLoggedIn() {
         $response = $this->post('api/roles/create', ['isUnique'=>true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'not_loggedin']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.login_required')]);
     }   
 
 
@@ -409,7 +409,7 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_DEFAULT')]);
 
         $response = $this->delete('api/roles/delete', ['id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'admin_required']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.admin_required')]);
     }
 
     public function testRoleDeleteInValidLoggedInAsMember() {
@@ -419,12 +419,12 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_MEMBER')]);
 
         $response = $this->delete('api/roles/delete', ['id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'admin_required']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.admin_required')]);
     }    
 
     public function testRoleDeleteInValidNotLoggedIn() {
         $response = $this->delete('api/roles/delete', ['id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'not_loggedin']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.login_required')]);
     }   
 
 
@@ -435,7 +435,7 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_DEFAULT')]);
 
         $response = $this->post('api/roles/attach', ['user_id'=>1, 'role_id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'admin_required']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.admin_required')]);
     }
 
     public function testRoleAttachInValidLoggedInAsMember() {
@@ -445,12 +445,12 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_MEMBER')]);
 
         $response = $this->post('api/roles/attach', ['user_id'=>1, 'role_id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'admin_required']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.admin_required')]);
     }    
 
     public function testRoleAttachInValidNotLoggedIn() {
         $response = $this->post('api/roles/attach', ['user_id'=>1, 'role_id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'not_loggedin']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.login_required')]);
     } 
 
 
@@ -461,7 +461,7 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_DEFAULT')]);
 
         $response = $this->post('api/roles/detach', ['user_id'=>1, 'role_id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'admin_required']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.admin_required')]);
     }
 
     public function testRoleDetachInValidLoggedInAsMember() {
@@ -471,12 +471,12 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_MEMBER')]);
 
         $response = $this->post('api/roles/detach', ['user_id'=>1, 'role_id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'admin_required']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.admin_required')]);
     }    
 
     public function testRoleDetachInValidNotLoggedIn() {
         $response = $this->post('api/roles/detach', ['user_id'=>1, 'role_id'=>1]);
-        $response->assertStatus(401)->assertJson(['response' => 'error','message' => 'not_loggedin']);
+        $response->assertStatus(401)->assertJson(['response' => 'error','message' => __('auth.login_required')]);
     }     
 
 }

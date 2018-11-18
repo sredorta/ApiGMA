@@ -267,7 +267,7 @@ class AuthUpdateTest extends TestCase {
             'firstName' => 'Sergi'    
         ];
         $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(401)->assertJson(['response'=>'error', 'message'=>'not_loggedin']);
+        $response->assertStatus(401)->assertJson(['response'=>'error', 'message'=>__('auth.login_required')]);
     }
 
 }

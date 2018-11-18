@@ -25,7 +25,7 @@ class Registered
             if ($request->bearerToken() === null) {
                 return response()->json([
                     'response' => 'error',
-                    'message' => 'not_loggedin'
+                    'message' => __('auth.login_required')
                 ],401);
             }    
             JWTAuth::setToken($request->bearerToken()) ;
@@ -36,11 +36,11 @@ class Registered
 
         } catch (Exception $e) {
             if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException){
-                return response()->json(['error'=>'token_invalid']);
+                return response()->json(['error'=>__('auth.invalid')]);
             }else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenExpiredException){
-                return response()->json(['error'=>'token_expired']);
+                return response()->json(['error'=>__('auth.expired')]);
             }else{
-                return response()->json(['error'=>'token_error']);
+                return response()->json(['error'=>__('auth.error')]);
             }
         }
 

@@ -51,7 +51,7 @@ class NotificationsTest extends TestCase {
 
     public function testNotificationsNotLoggedIn() {
         $response = $this->delete('api/notifications/delete', ["id"=>1]);
-        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => 'not_loggedin']);
+        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => __('auth.login_required')]);
     }
 
     public function testNotificationsOnSignUp() {
@@ -134,7 +134,7 @@ class NotificationsTest extends TestCase {
     } 
     public function testNotificationsgetAllNotLoggedInTwo() {
         $response = $this->get('api/notifications');
-        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => 'not_loggedin']);
+        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => __('auth.login_required')]);
     } 
 
 

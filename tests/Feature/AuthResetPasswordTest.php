@@ -100,7 +100,7 @@ class AuthResetPasswordValidateTest extends TestCase {
     public function testResetPasswordInvalidGuard() {
         $this->loginAs();
         $response = $this->post('api/auth/resetpassword', ['email'=>'sergi.redorta@hotmail.com']);
-        $response->assertStatus(401)->assertExactJson(['response' => 'error','message' => 'already_loggedin']);
+        $response->assertStatus(401)->assertExactJson(['response' => 'error','message' => __('auth.already_loggedin')]);
     }    
 
 }

@@ -45,7 +45,7 @@ class AuthLogoutTest extends TestCase {
     
     public function testLogoutInValidNotLoggedIn() {
         $response = $this->post('api/auth/logout');
-        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => 'not_loggedin']);
+        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => __('auth.login_required')]);
     }
 
     public function testLogoutInValidDummyToken() {

@@ -50,7 +50,7 @@ class Unregistered
         }   
         return response()->json([
             'response' => 'error',
-            'message' => 'already_loggedin'
+            'message' => __('auth.already_loggedin')
         ],401);
     }
 }

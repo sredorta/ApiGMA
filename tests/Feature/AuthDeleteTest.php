@@ -68,6 +68,6 @@ class AuthDeleteValidateTest extends TestCase {
     //Guard check
     public function testAuthDeleteInvalidNotLogged() {
         $response = $this->delete('api/auth/delete');
-        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => 'not_loggedin']);
+        $response->assertStatus(401)->assertExactJson(['response' => 'error', 'message' => __('auth.login_required')]);
     }
 }

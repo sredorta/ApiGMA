@@ -247,7 +247,7 @@ class AuthLoginTest extends TestCase {
             'password'=> 'Secure0'            
         ];        
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(401)->assertJson(['response'=>'error', 'message'=>'already_loggedin']); 
+        $response->assertStatus(401)->assertJson(['response'=>'error', 'message'=>__('auth.already_loggedin')]); 
     }    
 
     ////////////////////////////////////////////////////////////////////////
