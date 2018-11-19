@@ -23,7 +23,9 @@ class Unregistered
     {
         //Set language from HTTP header
         if ($request->header('Accept-Language') !== null) {
-            app::setLocale(substr($request->header('Accept-Language'),0,2));
+            $locale = substr($request->header('Accept-Language'),0,2);
+            if ($locale !== "en" && $locale !== "fr") $locale = 'fr';
+            app::setLocale($locale);
         } 
 
         $request->attributes->add(['isLogged' => false]);

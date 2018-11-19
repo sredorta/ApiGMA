@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ app()->getLocale() }}">
 <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -69,7 +69,7 @@
   <body>
     {!! $html !!}
     <div style="margin-top:40px">
-      <small>*** Ce message est généré automatiquement. Merci de ne pas y répondre.***</small>
+      <small>@lang('email.footer')</small>
     </div>
   </body>
 </html>

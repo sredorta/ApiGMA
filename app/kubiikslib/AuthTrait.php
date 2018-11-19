@@ -17,6 +17,7 @@ use App\User;
 use App\Account;
 use App\Attachment;
 use App\Notification;
+use App;
 
 trait AuthTrait {
  use ThrottlesLogins;           //Add Throttle traits
@@ -66,12 +67,7 @@ trait AuthTrait {
             'password'=> 'required|min:4'
         ]);
         if ($validator->fails()) {
-            return response()
-                ->json([
-                    'response' => 'error',
-                    'message' => 'validation_failed',
-                    'errors' => $validator->errors()
-                ], 400);            
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);          
         }        
 
         //Check if user already registerd in the Users
@@ -80,11 +76,10 @@ trait AuthTrait {
             'mobile' => 'required|unique:users'
         ]);
         if ($validator->fails()) {
-            return response()->json([
-                'response' => 'error',
-                'message' => 'user_already_registered'
-            ],400);
+            return response()->json(['response' => 'error', 'message' => __('auth.user_already_exists')],400);
         }       
+
+        $language = app::getLocale();
 
         //FIRST: we create a User
         $user = User::create([
@@ -92,17 +87,15 @@ trait AuthTrait {
             'lastName' => $request->get('lastName'),
             'mobile' => $request->get('mobile'),
             'email' => $request->get('email'),
-            'emailValidationKey' => $this->generateEmailKey()
+            'emailValidationKey' => $this->generateEmailKey(),
+            'language' => $language
         ]);
         //We now create the Attachable with the image uploaded
         $attachment = new Attachment;
         if ($attachment->add($user->id, User::class, "avatar","images/users/". $user->id . "/", $request->get('avatar'))== null) {
             $user->delete();
             return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'attachable_failed'
-            ], 400);               
+            ->json(['response' => 'error','message' => __('attachable.confirm_title')], 400);               
         };
 
         //SECOND: we create the standard User (account)
@@ -116,22 +109,22 @@ trait AuthTrait {
                 $user->id  .
                 '&key=' .
                 $user->emailValidationKey;
-        $data = ['html' => "<div><h2>" . $user->firstName . ", bienvenu(e) au GMA500</h2>
-        <p>Vous n'avez pas encore confirmé votre adresse électronique.</p>
-        <p>Vous pouvez confirmer votre adresse électronique en cliquant sur le lien suivant</p>
-        <a href=\"" . $key . "\">Confirmer mon adresse électronique</a>
+        $data = ['html' => "<div><h2>" . __('email.confirm_title', ['name'=>$user->firstName]) . "</h2>
+        <p>" . __('email.confirm_line1') . "</p>
+        <p>" . __('email.confirm_line2') . "</p>
+        <a href=\"" . $key . "\">" . __('email.confirm_link') . "</a>
         </div>"];
-        $this->sendEmail($user->email, "GMA500: Confirmation de votre adresse électronique", $data);
+        $this->sendEmail($user->email, __('email.confirm_subject'), $data);
 
         //Add user notification
         $notification = new Notification;
-        $notification->text = "Bienvenu au site du GMA. Vous etes pré-inscrit";
+        $notification->text = __('notification.welcome', ['name'=>$user->firstName]);
         $user->notifications()->save($notification);
 
         //FINALLY:: Return ok code
         return response()->json([
             'response' => 'success',
-            'message' => 'signup_success',
+            'message' => __('auth.signup_success'),
         ], 200);
   }
 
@@ -188,11 +181,7 @@ trait AuthTrait {
       'access' => 'nullable|min:3'
   ]);
   if ($validator->fails()) {
-    return response()
-      ->json([
-          'response' => 'error',
-          'message' => 'validation_failed'
-          ], 400);
+    return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
   }
   //Get tokenLife depending on keepconnected
   $tokenLife = $this->getTokenLife($request->keepconnected);
@@ -200,16 +189,13 @@ trait AuthTrait {
   //Check for throttling count
   if ($this->hasTooManyLoginAttempts($request)) {
       $this->fireLockoutEvent($request);
-      return response()->json(['response' =>'error','message' => 'too_many_logins'], 400);
+      return response()->json(['response' =>'error','message' => __('auth.throttle', ['seconds'=> "60"])], 400);
   }   
 
   //Find if we have user with specified email
   $user = User::where('email', $request->email)->first();
   if ($user == null) {
-    return response()->json([
-      'response' => 'error',
-      'message' => 'invalid_email_or_password'                                 
-    ],400);     
+    return response()->json(['response' => 'error','message' => __('auth.failed')],400);     
   }
   $accounts = $user->accounts()->get();
 
@@ -229,19 +215,13 @@ trait AuthTrait {
 
   //Make sure that there is one account we want to connect to
   if ($account == null) {
-      return response()->json([
-          'response' => 'error',
-          'message' => 'invalid_email_or_password'                                 
-      ],400); 
+      return response()->json(['response' => 'error','message' => __('auth.account_missing')],400); 
   }
 
   //Check that password matches with the specified access
   if (!Hash::check($request->get('password'), $account->password)) {
     $this->incrementLoginAttempts($request); //Increments throttle count
-    return response()->json([
-        'response' => 'error',
-        'message' => 'invalid_password'
-    ],400);
+    return response()->json(['response' => 'error','message' => __('auth.failed')],400);
   }
 
   //Try to authenticate and get a token
@@ -251,15 +231,12 @@ trait AuthTrait {
     $customClaims = ['user_id'=> $user->id, 'account_id'=>$account->id, 'exp' => Carbon::now()->addMinutes($tokenLife)->timestamp];
     if (!$token = JWTAuth::attempt($credentials,$customClaims)) {
         $this->incrementLoginAttempts($request); //Increments throttle count
-        return response()->json([
-            'response' => 'error',
-            'message' => 'invalid_email_or_password'
-        ],401);
+        return response()->json(['response' => 'error','message' => __('auth.failed')],401);
     }    
   } catch (JWTAuthException $e) {
     return response()->json([
         'response' => 'error',
-        'message' => 'failed_to_create_token',
+        'message' => __('auth.failed'),
     ],401);
   }
 
@@ -271,10 +248,7 @@ trait AuthTrait {
   $user = User::find($account->user_id);
   if ($user->isEmailValidated == 0) {
       JWTAuth::invalidate($token);
-      return response()->json([
-          'response' => 'error',
-          'message' => 'email_not_validated',
-          ],401);            
+      return response()->json(['response' => 'error','message' => __('auth.failed')],401);            
   }
 
   //Return the token
@@ -357,10 +331,7 @@ trait AuthTrait {
       //Check that we have user with the requested email/access
       if ($user->count() == 0) {
         return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'email_not_found'
-            ], 400);          
+            ->json(['response' => 'error','message' => __('auth.email_failed')], 400);          
       }
       $user = $user->first();
       $accounts = $user->accounts()->get();
@@ -379,11 +350,7 @@ trait AuthTrait {
           $account = $accounts->first();
       }
       if ($account == null) {
-        return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400);   
+        return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
       }
 
       //Regenerate a new password
@@ -392,16 +359,13 @@ trait AuthTrait {
       $account->save();
 
       //Send email with new password
-      $data = ['html' => "<div><h2>Demande de nouveau mot de passe pour votre compte</h2>
-      <p>Votre nouveau mot de passe est: <span style=\"font-weight:bold\">". $newPass . "</span></p>
-      <p>Ce mot de passe concerne l'accés : ". $account->access . "</p>
+      $data = ['html' => "<div><h2>" . __('auth.reset_title') . "</h2>
+      <p>". __('auth.reset_text1') . "<span style=\"font-weight:bold\">". $newPass . "</span></p>
+      <p>" . __('auth.reset_text2') .  $account->access . "</p>
       </div>"];
-      $this->sendEmail($user->email, "GMA500: Votre nouveau mot de passe", $data);
+      $this->sendEmail($user->email, __('auth.reset_subject'), $data);
 
-      return response()->json([
-          'response' => 'success',
-          'message' => 'password_reset_success'
-      ], 200); 
+      return response()->json(['response' => 'success','message' => __('auth.reset_success')], 200); 
   }
 
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -412,31 +376,24 @@ trait AuthTrait {
     //
     ////////////////////////////////////////////////////////////////////////////////////////
     public function update(Request $request) {
+        $user = User::find($request->get('myUser'));
         //Update firstName if is required
         $validator = Validator::make($request->all(), [
             'firstName' => 'required|string|min:2'
         ]);        
         if (!$validator->fails()) {
-            $user = User::find($request->get('myUser'));
             $user->firstName = $request->firstName;
             $user->save();
-            return response()->json([
-                'response' => 'success',
-                'message' => 'update_success',
-            ], 200);
+            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
         }
         //Update lastName if is required
         $validator = Validator::make($request->all(), [
             'lastName' => 'required|string|min:2'
         ]);        
         if (!$validator->fails()) {
-            $user = User::find($request->get('myUser'));
             $user->lastName = $request->lastName;
             $user->save();
-            return response()->json([
-                'response' => 'success',
-                'message' => 'update_success',
-            ], 200);            
+            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
         }        
         //Update avatar if is required
         $validator = Validator::make($request->all(), [
@@ -444,14 +401,13 @@ trait AuthTrait {
         ]);        
         if (!$validator->fails()) {
             //Delete the current avatar attachable
-            $user = User::find($request->get('myUser'));
             $attachment = $user->attachments->where('function','avatar')->first()->delete(); //Remove old avatar
             $attachment = new Attachment;
             $avatar = $attachment->add($user->id, User::class, "avatar","images/users/". $user->id . "/", $request->get('avatar')); //Add new one
             $avatar = $avatar->filepath . $avatar->name;
             return response()->json([
                 'response' => 'success',
-                'message' => 'update_success',
+                'message' => __('auth.update_success'),
                 'avatar' => $avatar
             ], 200);
         } 
@@ -465,20 +421,13 @@ trait AuthTrait {
                 'mobile' => 'unique:users'
             ]);
             if ($validatorU->fails()) {
-                return response()->json([
-                    'response' => 'error',
-                    'message' => 'mobile_already_registered',
-                ],400);
+                return response()->json(['response' => 'error','message' => __('auth.update_phone_found')],400);
             }
         }
         if (!$validator->fails()) {
-            $user = User::find($request->get('myUser'));
             $user->mobile = $request->mobile;
             $user->save();
-            return response()->json([
-                'response' => 'success',
-                'message' => 'update_success',
-            ], 200);
+            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
         }  
 
         //Update password
@@ -490,17 +439,11 @@ trait AuthTrait {
             //Check that password old matches
             $account = Account::find($request->get('myAccount'))->first();
             if (!Hash::check($request->get('password_old'), $account->password)) {
-                return response()->json([
-                    'response' => 'error',
-                    'message' => 'invalid_password'
-                ],400);
+                return response()->json(['response' => 'error','message' => __('auth.update_password')],400);
             }
             $account->password = Hash::make($request->get('password_new'), ['rounds' => 12]);
             $account->save();
-            return response()->json([
-                'response' => 'success',
-                'message' => 'update_success',
-            ], 200);
+            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
         }  
 
         //Update email if is required and then we need to set email validated to false and logout and send email
@@ -512,14 +455,10 @@ trait AuthTrait {
                 'email' => 'unique:users'
             ]);
             if ($validatorU->fails()) {
-                return response()->json([
-                    'response' => 'error',
-                    'message' => 'email_already_registered',
-                ],400);
+                return response()->json(['response' => 'error','message' => __('auth.update_email')],400);
             }
         }
         if (!$validator->fails()) {
-            $user = User::find($request->get('myUser'));
             $user->isEmailValidated = 0;
             $user->emailValidationKey = $this->generateEmailKey();
             $user->email = $request->email;
@@ -530,20 +469,18 @@ trait AuthTrait {
                     $user->id  .
                     '&key=' .
                     $user->emailValidationKey;
-            $data = ['html' => "<div><h2>Modification de compte email</h2>
-            <p>Vous n'avez pas encore confirmé votre adresse électronique.</p>
-            <p>Vous pouvez confirmer votre adresse électronique en cliquant sur le lien suivant</p>
-            <a href=\"" . $key . "\">Confirmer mon adresse électronique</a>
+            $data = ['html' => "<div><h2>" . __('email.change', ['name'=>$user->firstName]) . "</h2>
+            <p>" . __('email.confirm_line1') . "</p>
+            <p>" . __('email.confirm_line2') . "</p>
+            <a href=\"" . $key . "\">" . __('email.confirm_link') . "</a>
             </div>"];
-            $this->sendEmail($user->email, "GMA500: Confirmation de votre adresse électronique", $data);
-
+            $this->sendEmail($user->email, __('email.confirm_subject'), $data);
+    
 
             //Invalidate the token
             JWTAuth::invalidate($request->bearerToken());
-            return response()->json([
-                'response' => 'success',
-                'message' => 'update_success',
-            ], 200);            
+            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
+            
         }
         //If we got here, we have bad arguments
         return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);

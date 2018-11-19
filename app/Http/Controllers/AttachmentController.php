@@ -26,11 +26,7 @@ class AttachmentController extends Controller
             'base64' => 'required|string'
         ]);        
         if ($validator->fails()) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400); 
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }       
         $user = User::find($request->get('myUser'));
 
