@@ -39,14 +39,18 @@ class NotificationsTest extends TestCase {
 
     public function testNotificationsInvalidId() {
         $this->loginAs();
-        $response = $this->delete('api/notifications/delete', ["test"=>"test"]);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation_failed']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/notifications/delete', ["test"=>"test"]);
+        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation.required']);
     }
 
     public function testNotificationsInvalidIdNumber() {
         $this->loginAs();
-        $response = $this->delete('api/notifications/delete', ["id"=>100]);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation_failed']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/notifications/delete', ["id"=>100]);
+        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'notification.missing']);
     }
 
     public function testNotificationsNotLoggedIn() {
@@ -56,6 +60,8 @@ class NotificationsTest extends TestCase {
 
     public function testNotificationsOnSignUp() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->last();
         $this->assertDatabaseHas('notifications', [
             'user_id' => $user->id
@@ -64,7 +70,9 @@ class NotificationsTest extends TestCase {
 
     public function testNotificationsValidDelete() {
         $this->loginAs();
-        $response = $this->delete('api/notifications/delete', ["id"=>1]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/notifications/delete', ["id"=>1]);
         $user = User::all()->last();
         $this->assertDatabaseMissing('notifications', [
             'user_id' => $user->id
@@ -73,12 +81,14 @@ class NotificationsTest extends TestCase {
 
     public function testNotificationsMarkAsReadValid() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->last();
         $this->assertDatabaseHas('notifications', [
             'user_id' => $user->id,
             'isRead' => false
         ]);
-        $response = $this->post('api/notifications/markread', ["id"=>1]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/notifications/markread', ["id"=>1]);
 
         $this->assertDatabaseHas('notifications', [
             'user_id' => $user->id,
@@ -88,16 +98,20 @@ class NotificationsTest extends TestCase {
 
     public function testNotificationsMarkAsReadInValidId() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->last();
-        $response = $this->post('api/notifications/markread', ["id"=>10]);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation_failed']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/notifications/markread', ["id"=>10]);
+        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'notification.missing']);
     }
 
     public function testNotificationsMarkAsReadInMissingId() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->last();
-        $response = $this->post('api/notifications/markread', ["test"=>10]);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation_failed']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/notifications/markread', ["test"=>10]);
+        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation.required']);
     }    
 
     public function testNotificationsMarkAsReadNotLoggedIn() {
@@ -119,12 +133,14 @@ class NotificationsTest extends TestCase {
 
     public function testNotificationsgetAllValid() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->last();
         $notification = new Notification;
         $notification->user_id = 1;
         $notification->text = "Test of notif";
         $notification->save();
-        $response = $this->get('api/notifications');
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/notifications');
         $this->assertDatabaseHas('notifications', [
             'user_id' => $user->id, "text" => "Test of notif"
         ]);

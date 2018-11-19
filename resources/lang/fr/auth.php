@@ -1,5 +1,7 @@
 <?php
 
+if(env('APP_ENV') === 'testing')
+    return['language_test' => 'francais'];
 return [
     /*
     |--------------------------------------------------------------------------
@@ -22,6 +24,7 @@ return [
     'already_loggedin' => 'Vous ne pouvez pas être déjà connecté pour éxécuter cette operation',
     'user_already_exists' => 'Mobile ou email déjà enregistré dans le système',
     'signup_success' => 'Création du compte reusie. Validez votre compte email et connectez-vous',
+    'login_validate' => "Vous dévez valider votre compte email pour pouvoir acceder",
     'account_missing' => "Compte pas trouvé",
     'token_error' => "Le token d'identification n'a pas pu etre géneré",
     'email_failed' => "Cette addresse email ne correspond pas à nos enregistrements",

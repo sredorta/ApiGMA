@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 use JWTAuth;
 use Closure;
+use App;
 use App\Account;
 use App\User;
 use Illuminate\Support\Facades\Config;

@@ -1,5 +1,8 @@
 <?php
 
+
+if(env('APP_ENV') === 'testing')
+    return['language_test' => 'english'];
 return [
 
     /*
@@ -23,6 +26,7 @@ return [
     'already_loggedin' => 'This operation requires not to be logged in',
     'user_already_exists' => 'Email or phone already registered in the system',
     'signup_success' => "Success signup. Please validate your email and login",
+    'login_validate' => "You need to validate your email to get access",
     'account_missing' => "Account not found",
     'token_error' => "The authentification token could not be created",
     'email_failed' => "This email does not match our records",

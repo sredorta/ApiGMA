@@ -41,7 +41,7 @@ class AuthSignupTest extends TestCase {
         ];
         $response = $this->post('api/auth/signup', $data);
         //dd($response->json());
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.email']);
     }
 
     public function testSignupInvalidPhone() {
@@ -53,7 +53,7 @@ class AuthSignupTest extends TestCase {
             'password'=> 'Secure0'            
         ];
         $response = $this->post('api/auth/signup', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.max.string']);
     }
 
     public function testSignupInvalidMissingfirstName() {
@@ -64,7 +64,7 @@ class AuthSignupTest extends TestCase {
             'password'=> 'Secure0'            
         ];
         $response = $this->post('api/auth/signup', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }    
 
     public function testSignupInvalidMissingLastName() {
@@ -75,7 +75,7 @@ class AuthSignupTest extends TestCase {
             'password'=> 'Secure0'            
         ];
         $response = $this->post('api/auth/signup', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }
 
     public function testSignupInvalidMissingEmail() {
@@ -87,14 +87,14 @@ class AuthSignupTest extends TestCase {
         ];
         $response = $this->post('api/auth/signup', $data);
         //dd ($response->json());
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }    
 
     public function testSignupInvalidMissingAll() {
         $data = [];
         $response = $this->post('api/auth/signup', $data);
         //dd ($response->json());
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }   
 
     public function testSignupAlreadyRegistered() {
@@ -106,19 +106,19 @@ class AuthSignupTest extends TestCase {
             'password'=> 'Secure0'            
         ];        
         $response = $this->post('api/auth/signup', $data);
-        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'signup_success']);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.signup_success']);
         //Recreate same user
         $response = $this->post('api/auth/signup', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'user_already_registered']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.user_already_exists']);
         //Check phone
         $data['email'] = 'sergi.redorta2@hotmail.com';
         $response = $this->post('api/auth/signup', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'user_already_registered']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.user_already_exists']);
         //Check email
         $data['phone'] = '0623133222';
         $data['email'] = 'sergi.redorta@hotmail.com';
         $response = $this->post('api/auth/signup', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'user_already_registered']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.user_already_exists']);
         //dd ($response->json());
     }
 
@@ -134,7 +134,7 @@ class AuthSignupTest extends TestCase {
             'password'=> 'Secure0'            
         ];        
         $response = $this->post('api/auth/signup', $data);
-        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'signup_success']);        
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.signup_success']);        
         $this->assertDatabaseHas('users', [
             'email' => 'sergi.redorta@hotmail.com'
         ]);

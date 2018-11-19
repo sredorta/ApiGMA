@@ -39,7 +39,8 @@ class AuthLogoutTest extends TestCase {
 
     public function testLogoutValid() {
         $this->loginAs();
-        $response = $this->post('api/auth/logout');
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/logout');
         $response->assertStatus(204);
     }
     
@@ -57,10 +58,26 @@ class AuthLogoutTest extends TestCase {
     //Invalid token
     public function testLogoutInValidTokenInvalidated() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
         $this->invalidateToken();
         $this->expectException(\Tymon\JWTAuth\Exceptions\TokenBlacklistedException::class);
         $response = $this->post('api/auth/logout');
         dd($response->json()); //This is required to wait that exception is catched
     }   
+
+    public function testAdminValidLogoutAdmin() {
+        $this->signup();
+        $user = User::all()->last();
+        $account = new Account;
+        $account->user_id = $user->id;
+        $account->key = Helper::generateRandomStr(30);
+        $account->password = Hash::make('Secure10', ['rounds' => 12]);
+        $account->access = Config::get('constants.ACCESS_ADMIN');
+        $user->accounts()->save($account); 
+        $this->login(['password'=>'Secure10','access' => Config::get('constants.ACCESS_ADMIN')]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/logout');
+        $response->assertStatus(204);
+    }
 
 }

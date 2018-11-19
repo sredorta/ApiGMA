@@ -25,27 +25,19 @@ class RoleController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400);   
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400); 
         }          
         $role = Role::find($request->role_id);
         $user = User::find($request->user_id);
         if (!$user || !$role) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400);             
+            return response()->json(['response'=>'error', 'message'=>__('role.missing')], 400);             
         }
         //Remove precedent attachment if is unique
         if ($role->isUnique) {
             DB::table('role_user')->where('role_id', $role->id)->delete();
         }
         $notif = new Notification;
-        $notif->text = "Le role de " . Role::find($request->role_id)->name . " vous à été assigné";
+        $notif->text = __('role.assign', ['role'=> Role::find($request->role_id)->name]);
         $user->notifications()->save($notif);
         $user->roles()->attach($request->role_id);
         return response()->json(null,204); 
@@ -58,24 +50,16 @@ class RoleController extends Controller
             'role_id' => 'required|numeric'
         ]);
         if ($validator->fails()) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400);   
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);   
         }
         $role = Role::find($request->role_id);
         $user = User::find($request->user_id);
         if (!$user || !$role) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400);             
+            return response()->json(['response'=>'error', 'message'=>__('role.missing')], 400);     
         }      
         $user->roles()->detach($role->id);
         $notif = new Notification;
-        $notif->text = "Le role de " . Role::find($role->id)->name . " vous à été enlevé";
+        $notif->text = __('role.unassign', ['role'=> Role::find($request->role_id)->name]);
         $user->notifications()->save($notif);
         return response()->json(null,204); 
     }
@@ -88,11 +72,7 @@ class RoleController extends Controller
             'description' => 'required|min:10|max:500'
         ]);
         if ($validator->fails()) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400);   
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);    
         }
         $isUnique = $request->isUnique;
         if ($request->isUnique == null) $request->isUnique = false;
@@ -110,20 +90,12 @@ class RoleController extends Controller
             'id' => 'required|numeric'
         ]);
         if ($validator->fails()) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400);  
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400); 
         }          
         //When a role is removed all attached roles in the pivot are removed !
         $role = Role::find($request->id);
         if ($role == null) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'validation_failed'
-            ], 400);  
+            return response()->json(['response'=>'error', 'message'=>__('role.missing')], 400); 
         }
         Role::find($request->id)->delete();
         return response()->json(null,204); 

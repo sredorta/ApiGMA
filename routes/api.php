@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 //Registered or not
 Route::group(['middleware' => 'any'], function ($router) {
     Route::get('auth/user', 'AccountController@getAuthUser');
+    Route::get('auth/lang/any', 'AccountController@language');
 });
 
 //Only if we are not loggedIn
@@ -28,10 +29,12 @@ Route::group(['middleware' => 'unregistered'], function ($router) {
     Route::post('auth/signup', 'AccountController@signup'); 
     Route::get('auth/emailvalidate', 'AccountController@emailValidate');   
     Route::post('auth/resetpassword', 'AccountController@resetPassword');   //Resets password
+    Route::get('auth/lang/unregistered', 'AccountController@language');
 });
  
 //Only if we are registerd with any access
 Route::group(['middleware' => 'registered'], function ($router) {
+    Route::get('auth/lang/registered', 'AccountController@language');
     Route::post('auth/logout', 'AccountController@logout');
     Route::post('auth/update', 'AccountController@update'); 
     Route::delete('auth/delete', 'AccountController@delete'); 
@@ -48,6 +51,7 @@ Route::group(['middleware' => 'registered'], function ($router) {
 
 //Returns all data from all users including roles and accounts
 Route::group(['middleware' => 'admin'], function ($router) {
+    Route::get('auth/lang/admin', 'AccountController@language');
     Route::get('roles' , 'RoleController@getRoles');              //Get all Roles
     Route::post('roles/attach' , 'RoleController@attachUser');    //Adds a role to a user
     Route::post('roles/detach' , 'RoleController@detachUser');    //Removes a role to a user

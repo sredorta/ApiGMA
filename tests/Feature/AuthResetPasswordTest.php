@@ -35,13 +35,13 @@ class AuthResetPasswordValidateTest extends TestCase {
 
     public function testResetPasswordValidateInvalidParams() {
         $response = $this->post('api/auth/resetpassword', ['titi'=> '']);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation_failed']);
+        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation.required']);
     }
 
     public function testResetPasswordValidateEmailNotFound() {
         $this->signup();
         $response = $this->post('api/auth/resetpassword', ['email'=> 'toto@test.com']);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'email_not_found']);
+        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'auth.email_failed']);
     }   
 
     public function testResetPasswordValidateValidSimpleAccess() {
@@ -49,7 +49,7 @@ class AuthResetPasswordValidateTest extends TestCase {
         $user = User::all()->last();
         $oldpass = $user->accounts()->first()->password;
         $response = $this->post('api/auth/resetpassword', ['email'=> 'sergi.redorta@hotmail.com']);
-        $response->assertStatus(200)->assertExactJson(['response' => 'success', 'message' => 'password_reset_success']);
+        $response->assertStatus(200)->assertExactJson(['response' => 'success', 'message' => 'auth.reset_success']);
         $this->assertDatabaseMissing('accounts', [
             'email' => 'sergi.redorta@hotmail.com', 'password' => $oldpass
         ]);
@@ -60,7 +60,7 @@ class AuthResetPasswordValidateTest extends TestCase {
         $user = User::all()->last();
         $oldpass = $user->accounts()->first()->password;
         $response = $this->post('api/auth/resetpassword', ['email'=> 'sergi.redorta@hotmail.com', 'access'=>'dummy']);
-        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => 'validation_failed']);
+        $response->assertStatus(400)->assertExactJson(['response' => 'error', 'message' => __('auth.account_missing')]);
     }      
 
     public function testResetPasswordValidateValidMultipleAccessNotSpecified() {
@@ -89,7 +89,7 @@ class AuthResetPasswordValidateTest extends TestCase {
         $user->accounts()->save($account); 
 
         $response = $this->post('api/auth/resetpassword', ['email'=> 'sergi.redorta@hotmail.com', 'access'=> Config::get('constants.ACCESS_ADMIN')]);
-        $response->assertStatus(200)->assertExactJson(['response' => 'success','message' => 'password_reset_success']);
+        $response->assertStatus(200)->assertExactJson(['response' => 'success','message' => 'auth.reset_success']);
         $this->assertDatabaseMissing('accounts', [
             'access' => Config::get('constants.ACCESS_ADMIN'),
             'email' => 'sergi.redorta@hotmail.com', 'password' => $oldpass
@@ -99,7 +99,8 @@ class AuthResetPasswordValidateTest extends TestCase {
     //Guard checkin
     public function testResetPasswordInvalidGuard() {
         $this->loginAs();
-        $response = $this->post('api/auth/resetpassword', ['email'=>'sergi.redorta@hotmail.com']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/resetpassword', ['email'=>'sergi.redorta@hotmail.com']);
         $response->assertStatus(401)->assertExactJson(['response' => 'error','message' => __('auth.already_loggedin')]);
     }    
 

@@ -36,7 +36,8 @@ class Unregistered
             JWTAuth::setToken($request->bearerToken()) ;
             //Get user id from the payload
             $payload = JWTAuth::setRequest($request)->parseToken()->getPayload();
-
+            $user = $payload->get('user_id');
+            $account = $payload->get('account_id');
         } catch (Exception $e) {
             if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException){
                 return $next($request);

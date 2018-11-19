@@ -37,18 +37,21 @@ class RoleTest extends TestCase {
             'email' => 'sergi.redorta@hotmail.com',
             'password'=> 'Secure2',
             'access' => Config::get('constants.ACCESS_ADMIN')]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
 
-        $response = $this->post('api/roles/create', []);
-        $response->assertStatus(400)->assertJson(['response' => 'error', 'message' => 'validation_failed']);
-
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/roles/create', []);
+        $response->assertStatus(400)->assertJson(['response' => 'error', 'message' => 'validation.required']);
     }
+    
+
     public function testRoleCreateValid() {
         $this->loginAsMultiple([
             'email' => 'sergi.redorta@hotmail.com',
             'password'=> 'Secure2',
             'access' => Config::get('constants.ACCESS_ADMIN')]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
 
-        $response = $this->post('api/roles/create', ['isUnique'=>true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/roles/create', ['isUnique'=>true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
         $response->assertStatus(200)->assertJson(['id' => 1, 'isUnique' => true, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
     }
 
@@ -60,7 +63,7 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_ADMIN')]);
 
         $response = $this->delete('api/roles/delete', ['id'=>10]);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']);        
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']);        
     }
 
     public function testRoleDeleteInvalidIdFormat() {
@@ -70,7 +73,7 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_ADMIN')]);
 
         $response = $this->delete('api/roles/delete', ['id'=>'test']);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']);        
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.numeric']);        
     }
 
     public function testRoleDeleteValidNotUnique() {
@@ -119,7 +122,7 @@ class RoleTest extends TestCase {
         
         $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
         $response  = $this->post('api/roles/attach', ['role_id'=>10, 'user_id'=>1]);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']); 
     }
 
     public function testRoleAttachInValidRoleIdFormat() {
@@ -132,7 +135,7 @@ class RoleTest extends TestCase {
         
         $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
         $response  = $this->post('api/roles/attach', ['role_id'=>'test', 'user_id'=>1]);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.numeric']); 
     }    
     public function testRoleAttachInValidUserIdNumber() {
         $this->signup(['email'=> 'sergi.redorta2@hotmail.com', 'mobile' => '0623133222']);
@@ -144,7 +147,7 @@ class RoleTest extends TestCase {
         
         $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
         $response  = $this->post('api/roles/attach', ['role_id'=>1, 'user_id'=>10]);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']); 
     }
     
     public function testRoleAttachInValidUserIdFormat() {
@@ -157,7 +160,7 @@ class RoleTest extends TestCase {
         
         $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
         $response  = $this->post('api/roles/attach', ['role_id'=>1, 'user_id'=>'test']);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.numeric']); 
     }  
 
     public function testRoleAttachInValidParameters() {
@@ -170,7 +173,7 @@ class RoleTest extends TestCase {
         
         $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
         $response  = $this->post('api/roles/attach', ['test'=>'test']);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.required']); 
     } 
 
     public function testRoleAttachValidUnique() {
@@ -250,7 +253,7 @@ class RoleTest extends TestCase {
             
             $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
             $response  = $this->post('api/roles/detach', ['role_id'=>10, 'user_id'=>1]);
-            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']); 
         }
     
         public function testRoleDetachInValidRoleIdFormat() {
@@ -263,7 +266,7 @@ class RoleTest extends TestCase {
             
             $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
             $response  = $this->post('api/roles/detach', ['role_id'=>'test', 'user_id'=>1]);
-            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.numeric']); 
         }    
         public function testRoleDetachInValidUserIdNumber() {
             $this->signup(['email'=> 'sergi.redorta2@hotmail.com', 'mobile' => '0623133222']);
@@ -275,7 +278,7 @@ class RoleTest extends TestCase {
             
             $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
             $response  = $this->post('api/roles/detach', ['role_id'=>1, 'user_id'=>10]);
-            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']); 
         }
         
         public function testRoleDetachInValidUserIdFormat() {
@@ -288,7 +291,7 @@ class RoleTest extends TestCase {
             
             $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
             $response  = $this->post('api/roles/detach', ['role_id'=>1, 'user_id'=>'test']);
-            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.numeric']); 
         }  
     
         public function testRoleDetachInValidParameters() {
@@ -301,7 +304,7 @@ class RoleTest extends TestCase {
             
             $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
             $response  = $this->post('api/roles/detach', ['test'=>'test']);
-            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation_failed']); 
+            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.required']); 
         } 
     
         public function testRoleDetachValid() {

@@ -16,21 +16,13 @@ class NotificationController extends Controller
                'id' => 'required|numeric',
            ]);
            if ($validator->fails()) {
-                return response()
-                ->json([
-                    'response' => 'error',
-                    'message' => 'validation_failed'
-                ], 400);                
+                return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400); 
            }          
            $notification = Notification::where('user_id', $request->get('myUser'))->find($id);
            if ($notification !== null) {
               $notification->delete();
            } else  {
-                return response()
-                ->json([
-                    'response' => 'error',
-                    'message' => 'validation_failed'
-                ], 400);                  
+                return response()->json(['response'=>'error', 'message'=>__('notification.missing')], 400);     
            }
            return response()->json(null, 204);
         }
@@ -43,20 +35,12 @@ class NotificationController extends Controller
                'id' => 'required|numeric',
            ]);
            if ($validator->fails()) {
-                return response()
-                ->json([
-                    'response' => 'error',
-                    'message' => 'validation_failed'
-                ], 400);   
+                return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
            }   
    
           $notification = Notification::where('user_id', $request->get('myUser'))->find($id);
           if ($notification == null) {
-              return response()
-              ->json([
-                  'response' => 'error',
-                  'message' => 'validation_failed'
-              ], 400);                  
+                return response()->json(['response'=>'error', 'message'=>__('notification.missing')], 400);               
           }
           $notification->isRead = true;
           $notification->save();

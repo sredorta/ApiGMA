@@ -43,7 +43,7 @@ class AuthLoginTest extends TestCase {
         ];
         $response = $this->post('api/auth/login', $data);
         //dd($response->json());
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.email']);
     }
 
     public function testLoginInvalidPassword() {
@@ -52,7 +52,7 @@ class AuthLoginTest extends TestCase {
             'password' => 't'
         ];
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.min.string']);
     }
 
     public function testLoginInvalidUserNotFound() {
@@ -61,7 +61,7 @@ class AuthLoginTest extends TestCase {
             'password' => 'Secure0'
         ];
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'invalid_email_or_password']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.failed']);
     }
 
     public function testLoginInvalidAccess() {
@@ -79,7 +79,7 @@ class AuthLoginTest extends TestCase {
             'access' => 'Admin'
         ];
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'invalid_email_or_password']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.account_missing']);
     }
 
     public function testLoginValidCheckIsValidatedEmail() {
@@ -96,7 +96,7 @@ class AuthLoginTest extends TestCase {
             'password' => 'Secure0'
         ];
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(401)->assertJson(['response'=>'error', 'message'=>'email_not_validated']);
+        $response->assertStatus(401)->assertJson(['response'=>'error', 'message'=>'auth.login_validate']);
     }
 
 
@@ -139,7 +139,7 @@ class AuthLoginTest extends TestCase {
             'access' => Config::get('constants.ACCESS_ADMIN')
         ];
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'invalid_email_or_password']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.account_missing']);
     }    
 
     public function testLoginInValidMultipleAccountsInversedPasswords() {
@@ -157,7 +157,7 @@ class AuthLoginTest extends TestCase {
             'access' => Config::get('constants.ACCESS_ADMIN')
         ];
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'invalid_password']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.failed']);
     }
 
     public function testLoginInValidMultipleAccountsInversedPasswordsViceversa() {
@@ -175,7 +175,7 @@ class AuthLoginTest extends TestCase {
             'access' => Config::get('constants.ACCESS_DEFAULT')
         ];
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'invalid_password']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.failed']);
     }
 
     //Test with multiple accounts
@@ -232,7 +232,7 @@ class AuthLoginTest extends TestCase {
             'password' => 'Secure0'
         ];
         $response = $this->post('api/auth/login', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'too_many_logins'] );
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.throttle'] );
     }    
 
 
@@ -291,5 +291,7 @@ class AuthLoginTest extends TestCase {
         //TODO DEFINE EXACTLY WHICH DATA IS RETURNED AND PROCESS IT
         //dd($response->json());
     }   
+
+    
 
 }

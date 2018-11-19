@@ -43,7 +43,7 @@ class AuthUpdateTest extends TestCase {
         ];
         $response = $this->post('api/auth/update', $data);
         //dd($response->json());
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }
 
     public function testUpdateInvalidLastName() {
@@ -53,36 +53,39 @@ class AuthUpdateTest extends TestCase {
         ];
         $response = $this->post('api/auth/update', $data);
         //dd($response->json());
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }
 
     public function testUpdateInvalidEmail() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
         $data = [
             'email' => 't'    
         ];
-        $response = $this->post('api/auth/update', $data);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
         //dd($response->json());
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.email']);
     }
 
     public function testUpdateInvalidEmailAlreadyRegistered() {
         $this->signup(['email'=>'sergi.redorta2@hotmail.com', 'mobile'=>'0623133222']);
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
         $data = [
             'email' => 'sergi.redorta2@hotmail.com'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'email_already_registered']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.update_email']);
     }
 
     public function testUpdateInvalidMobile() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
         $data = [
             'mobile' => '06bb'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }
 
     /*
@@ -98,59 +101,72 @@ class AuthUpdateTest extends TestCase {
     public function testUpdateInvalidMobileAlreadyRegistered() {
         $this->signup(['email'=>'sergi.redorta2@hotmail.com', 'mobile'=>'0623133222']);
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $data = [
             'mobile' => '0623133222'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'mobile_already_registered']);        
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.update_phone_found']);        
     }
 
     public function testUpdateInvalidPasswordMissingNewPassword() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $data = [
             'password_old' => 'Secure0'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }
+
     public function testUpdateInvalidPasswordMissingOldPassword() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $data = [
             'password_new' => 'Secure0'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }
 
     public function testUpdateInvalidPasswordTooShort() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $data = [
             'password_old' => 'AAA',
             'password_new' => 'BBB'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation_failed']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);
     }
     public function testUpdateInvalidPasswordWrong() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $data = [
             'password_old' => 'Secure22',
             'password_new' => 'Secure33'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'invalid_password']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.update_password']);
     }
 
     
     public function testUpdateInvalidPasswordMultipleAccessSwitchedPassword() {
         $this->loginAsMultiple();  //Secure0 : DEFAULT, Secure1 : MEMBER, Secure2 : ADMIN
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->last();
         $data = [
             'password_old'=> 'Secure2',
             'password_new' => 'Secure22'
         ];   
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'invalid_password']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.update_password']);
     }    
 
     ////////////////////////////////////////////////////////////////////////
@@ -158,11 +174,13 @@ class AuthUpdateTest extends TestCase {
     ////////////////////////////////////////////////////////////////////////
     public function testUpdateValidFirstName() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $data = [
             'firstName' => 'Toto'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'update_success']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
         $this->assertDatabaseHas('users', [
             'id' => 1,
             'firstName' => 'Toto'
@@ -171,11 +189,13 @@ class AuthUpdateTest extends TestCase {
 
     public function testUpdateValidLastName() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $data = [
             'lastName' => 'Toto'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'update_success']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
         $this->assertDatabaseHas('users', [
             'id' => 1,
             'lastName' => 'Toto'
@@ -184,15 +204,17 @@ class AuthUpdateTest extends TestCase {
 
     public function testUpdateValidEmail() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->first();   //Store old key
         $oldkey = $user->emailValidationKey;
 
         $data = [
             'email' => 'test@email.com'    
         ];
-        $response = $this->post('api/auth/update', $data);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
 
-        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'update_success']);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
         $this->assertDatabaseHas('users', [
             'id' => 1,
             'email' => 'test@email.com',
@@ -207,12 +229,14 @@ class AuthUpdateTest extends TestCase {
 
     public function testUpdateValidPhone() {
         $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $data = [
             'mobile' => '0699999999'    
         ];
-        $response = $this->post('api/auth/update', $data);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
 
-        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'update_success']);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
         $this->assertDatabaseHas('users', [
             'id' => 1,
             'mobile' => '0699999999'
@@ -221,14 +245,16 @@ class AuthUpdateTest extends TestCase {
 
     public function testUpdateValidPassword() {
         $this->loginAs();
-        $user = User::all()->first();   //Store old key
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
+        $user = User::all()->last();   //Store old key
         $oldpassword = $user->accounts()->first()->password;
         $data = [
             'password_old' => 'Secure0',
             'password_new' => 'Secure11'    
         ];
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'update_success']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
         $this->assertDatabaseMissing('accounts', [
             'id' => 1,
             'password' => $oldpassword
@@ -237,6 +263,8 @@ class AuthUpdateTest extends TestCase {
 
     public function testUpdateValidPasswordMultipleAccessDefault() {
         $this->loginAsMultiple();  //Secure0 : DEFAULT, Secure1 : MEMBER, Secure2 : ADMIN
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->last();
         //Get old password
         $account = $user->accounts()->where('access', Config::get('constants.ACCESS_DEFAULT'))->first();
@@ -245,8 +273,8 @@ class AuthUpdateTest extends TestCase {
             'password_old'=> 'Secure0',
             'password_new' => 'Secure22'
         ];   
-        $response = $this->post('api/auth/update', $data);
-        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'update_success']);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
         $this->assertDatabaseMissing('accounts', [
             'id' => $account->id,
             'access' => Config::get('constants.ACCESS_DEFAULT'),

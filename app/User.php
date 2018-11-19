@@ -59,7 +59,7 @@ class User extends Model
      * @var array
      */
     protected $fillable = [
-        'firstName','lastName', 'email', 'mobile','isEmailValidated','emailValidationKey'
+        'firstName','lastName', 'email', 'mobile','isEmailValidated','emailValidationKey','language'
     ];
 
 

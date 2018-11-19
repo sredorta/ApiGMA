@@ -248,7 +248,7 @@ trait AuthTrait {
   $user = User::find($account->user_id);
   if ($user->isEmailValidated == 0) {
       JWTAuth::invalidate($token);
-      return response()->json(['response' => 'error','message' => __('auth.failed')],401);            
+      return response()->json(['response' => 'error','message' => __('auth.login_validate')],401);            
   }
 
   //Return the token
@@ -350,7 +350,7 @@ trait AuthTrait {
           $account = $accounts->first();
       }
       if ($account == null) {
-        return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        return response()->json(['response'=>'error', 'message'=>__('auth.account_missing')], 400);
       }
 
       //Regenerate a new password
@@ -507,6 +507,18 @@ trait AuthTrait {
         //Invalidate the token
         return response()->json([],204); 
     }    
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  language:
+    //
+    //  This is for test purposes only
+    //  It returns a json with a full message translated to test language
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////
+    public function language(Request $request) {
+        return response()->json(['response' => 'success','message' => __('auth.language_test')], 200);
+    }
 
 
 }
