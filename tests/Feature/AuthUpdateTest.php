@@ -286,6 +286,64 @@ class AuthUpdateTest extends TestCase {
 
     }   
 
+    //Validate update language
+    public function testUpdateInValidLanguageNotSupported() {
+        $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $data = [
+            'language'=> 'xy'
+        ];   
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        //dd($response->json());
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.language_unsupported']);
+        $this->assertDatabaseMissing('users', [
+            'id' => 1,
+            'language' => 'xy'
+        ]);
+    }
+    public function testUpdateInValidLanguageFormat() {
+        $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $data = [
+            'language'=> 'dummy'
+        ];   
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        //dd($response->json());
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.language_unsupported']);
+        $this->assertDatabaseMissing('users', [
+            'id' => 1,
+            'language' => 'xy'
+        ]);
+    }    
+
+    public function testUpdateValidLanguageFr() {
+        $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $data = [
+            'language'=> 'fr'
+        ];   
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        //dd($response->json());
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
+        $this->assertDatabaseHas('users', [
+            'id' => 1,
+            'language' => 'fr'
+        ]);
+    }   
+    public function testUpdateValidLanguageEn() {
+        $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $data = [
+            'language'=> 'en'
+        ];   
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        //dd($response->json());
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
+        $this->assertDatabaseHas('users', [
+            'id' => 1,
+            'language' => 'en'
+        ]);
+    }       
 
     ////////////////////////////////////////////////////////////////////////
     // Guard testing

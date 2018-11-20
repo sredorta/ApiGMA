@@ -1,6 +1,8 @@
 <?php
 namespace App\kubiikslib; 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Config;
+
 class Helper
 {
 

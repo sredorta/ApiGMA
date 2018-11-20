@@ -22,7 +22,7 @@ class Admin
         //Set language from HTTP header
         if ($request->header('Accept-Language') !== null) {
             $locale = substr($request->header('Accept-Language'),0,2);
-            if ($locale !== "en" && $locale !== "fr") $locale = 'fr';
+            if (!in_array($locale, Config::get('constants.LANGUAGES'))) $locale = Config::get('app.fallback_locale');
             app::setLocale($locale);            
         }         
         try {

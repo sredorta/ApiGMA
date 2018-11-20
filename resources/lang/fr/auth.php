@@ -37,6 +37,7 @@ return [
     'update_phone_found' => "Ce numero de telephone est déjà enregistré dans le système",
     'update_password' => "Password pas correcte",
     'update_email' => "Cet email est déjà enregistré dans le système",
+    'language_unsupported' => "Cette langue n'est pas supporté",
 
     'test' => 'test en francais. Bien fait :param'
 ];

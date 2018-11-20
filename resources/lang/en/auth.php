@@ -39,7 +39,7 @@ return [
     'update_phone_found' => "This phone is already registered in our records",
     'update_password' => "Invalid password",
     'update_email' => "This email already exists in our records",
-
+    'language_unsupported' => "This language is not supported",
     'test' => 'test in english. Well done :param'
 
 ];

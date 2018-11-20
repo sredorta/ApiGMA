@@ -195,7 +195,7 @@ class AuthLoginTest extends TestCase {
         ];
         $response = $this->post('api/auth/login', $data);
         //dd($response->json());
-        $response->assertStatus(200)->assertJson(['response'=>'multiple_access', 'message'=> [Config::get('constants.ACCESS_DEFAULT'), Config::get('constants.ACCESS_ADMIN')]]);
+        $response->assertStatus(200)->assertJson(['access'=> [Config::get('constants.ACCESS_DEFAULT'), Config::get('constants.ACCESS_ADMIN')]]);
     }   
 
     //Test with multiple accounts specifying access

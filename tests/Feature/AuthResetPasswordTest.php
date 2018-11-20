@@ -74,7 +74,7 @@ class AuthResetPasswordValidateTest extends TestCase {
         $user->accounts()->save($account); 
 
         $response = $this->post('api/auth/resetpassword', ['email'=> 'sergi.redorta@hotmail.com']);
-        $response->assertStatus(200)->assertExactJson(['response' => 'multiple_access', 'message' => [Config::get('constants.ACCESS_DEFAULT'), Config::get('constants.ACCESS_ADMIN')]]);
+        $response->assertStatus(200)->assertExactJson(['access' => [Config::get('constants.ACCESS_DEFAULT'), Config::get('constants.ACCESS_ADMIN')]]);
     }    
 
     public function testResetPasswordValidateValidMultipleAccessSpecified() {

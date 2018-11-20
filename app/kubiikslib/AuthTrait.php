@@ -32,8 +32,8 @@ trait AuthTrait {
   //Returns token life depending on keepconnected
   public function getTokenLife($keep = false) {
     if (!$keep || $keep == null) 
-      return 120; //120 minuntes if we are not keeping connection
-    return 43200;           //30 days if we keep connected
+      return Config::get('constants.TOKEN_LIFE_SHORT');         //120 minuntes if we are not keeping connection
+    return Config::get('constants.TOKEN_LIFE_LONG');            //30 days if we keep connected
   }
 
   public function generateEmailKey() {
@@ -201,10 +201,7 @@ trait AuthTrait {
 
  //Checks if there are multiple accounts for the user with current access
   if ($request->access == null && $accounts->count()>1) {
-    return response()->json([
-      'response' => 'multiple_access',
-      'message' => $accounts->pluck('access')->toArray(),
-    ],200);    
+    return response()->json(['access' => $accounts->pluck('access')->toArray()],200);    
   }
 
   //Get current account
@@ -338,10 +335,7 @@ trait AuthTrait {
       //If access is not provided and we have multiple accounts return the list of available accounts
       if ($request->access == null && $accounts->count()>1) {
           $access = $accounts->pluck('access');
-          return response()->json([
-              'response' => 'multiple_access',
-              'message' => $access->toArray(),
-          ],200);
+          return response()->json(['access' => $access->toArray()],200);
       }
       //Get the account
       if ($request->access !== null) {
@@ -446,6 +440,21 @@ trait AuthTrait {
             return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
         }  
 
+        //Update language if is required
+        $validator = Validator::make($request->all(), [
+            'language' => 'required|string'
+        ]);
+        if (!$validator->fails()) {
+            if (in_array($request->language, Config::get('constants.LANGUAGES'))) {
+                $language = $request->language;
+                $user->language = $request->language;
+                $user->save();
+                return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
+            } else {
+                return response()->json(['response'=>'error', 'message'=>__('auth.language_unsupported')], 400);
+            }
+        }
+        
         //Update email if is required and then we need to set email validated to false and logout and send email
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users'
