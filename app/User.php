@@ -10,32 +10,14 @@ class User extends Model
 {
     use Notifiable;
 
-    public function koko() {
- /*       $result = new static();
-        $objJson = json_decode($json);
-        $class = new \ReflectionClass($result);
-        $publicProps = $class->getProperties(\ReflectionProperty::IS_PUBLIC);
-        foreach ($publicProps as $prop) {
-             $propName = $prop->name;
-             if (isset($objJson->$propName)) {
-                 $prop->setValue($result, $objJson->$propName);
-             }
-             else {
-                 $prop->setValue($result, null);
-             }
-        }
-        return $result;  */     
-        return true; 
-    }
-
-
-    public function test() {
-        
-    }
-
     //Return the attachments if any
     public function attachments() {
         return $this->morphMany(Attachment::class,'attachable');
+    }
+
+    //Return the images if any
+    public function images() {
+        return $this->morphMany(Image::class,'imageable');
     }
 
     //Return the accounts of the user

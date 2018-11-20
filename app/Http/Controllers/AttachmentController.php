@@ -18,11 +18,10 @@ class AttachmentController extends Controller
 
 
     //Add document
-    public function addDocument(Request $request) {
+    public function addAttachment(Request $request) {
 
         //Update firstName if is required
         $validator = Validator::make($request->all(), [
-            'function' => 'required|string',
             'base64' => 'required|string'
         ]);        
         if ($validator->fails()) {
@@ -31,13 +30,13 @@ class AttachmentController extends Controller
         $user = User::find($request->get('myUser'));
 
         //Check if there is already a document with same function
-        if ($user->attachments->where('function', $request->get('function'))->count()) {
+/*        if ($user->attachments->where('function', $request->get('function'))->count()) {
             return response()
             ->json([
                 'response' => 'error',
                 'message' => 'already_document'
             ], 400);             
-        }
+        }*/
 
         $attachment = new Attachment;
         $attachment = $attachment->add($user->id, User::class, $request->get('function'), "documents/users/". $user->id . "/", $request->get('base64'));         

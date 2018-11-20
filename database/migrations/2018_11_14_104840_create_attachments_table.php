@@ -17,11 +17,14 @@ class CreateAttachmentsTable extends Migration
             $table->increments('id');            
             $table->string('attachable_type');
             $table->integer('attachable_id')->unsigned();
-            $table->string('function'); //Function of the attachment: avatar, gallery, document...
-            $table->string('filepath');     //Relative path to the file in case of image is path + filename + orig.jpeg or 50.jpeg... 
-            $table->string('name');     //Random file name
-            $table->string('type');     //Type if is document or image...
-            $table->string('extension');                  
+            $table->string('default'); //Default type of attachment if any: avatar, product,...
+            $table->string('url');
+            $table->string('alt_text')->default("no_alt_text");
+            $table->string('mime_type');     //Type if is document or image...
+            $table->string('file_path');
+            $table->string('file_name');
+            $table->string('file_extension');
+            $table->integer('file_size')->unsigned();
             $table->timestamps();
         });
     }

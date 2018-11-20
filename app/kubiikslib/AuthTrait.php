@@ -91,13 +91,13 @@ trait AuthTrait {
             'language' => $language
         ]);
         //We now create the Attachable with the image uploaded
-        $attachment = new Attachment;
+/*        $attachment = new Attachment;
         if ($attachment->add($user->id, User::class, "avatar","images/users/". $user->id . "/", $request->get('avatar'))== null) {
             $user->delete();
             return response()
             ->json(['response' => 'error','message' => __('attachable.confirm_title')], 400);               
         };
-
+*/
         //SECOND: we create the standard User (account)
         $account = new Account;
         $account->key = Helper::generateRandomStr(30);

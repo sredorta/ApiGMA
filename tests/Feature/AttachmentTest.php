@@ -4,9 +4,14 @@ namespace Test\Feature;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
 use Artisan;
 use App\User;
 use App\Account;
+use App\Attachment;
+use App\Thumb;
 
 class AttachmentTest extends TestCase {
 
@@ -16,39 +21,35 @@ class AttachmentTest extends TestCase {
         
         Mail::fake();        //Avoid sending emails
         Artisan::call('migrate');
-        $this->loginAs();   //Create user and login and get current user in $this->user
     }
+
+
+    public function testAttachmentIncorrectData() {
+        $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
+        //Open image and get base64
+        //dd(Storage::disk('public')->exists('test_files/test.jpg' ));
+        //Storage::disk('public')->put($path . $filename . "/orig.jpeg", $stream);
+        $image = base64_encode(Storage::disk('public')->get('test_files/test.jpg' )); //Need to assert if file not exists
+        $image = "data:image/jpeg;base64," . $image;
+        $pdf = base64_encode(Storage::disk('public')->get('test_files/test.pdf' ));
+        $pdf = "data:image/jpeg;base64," . $pdf;
+
+        $user = User::all()->last();
+        $attachment = new Attachment;
+        $attachment = $attachment->add($user->id, User::class,'avatar','images', "Test alt text", $image);         
+        //public function add($id, $type, $function, $root, $alt_text, $filedata) {     
+
+        dd(Thumb::all());
+        dd(Attachment::all());
 /*
-    public function testSignup() {
-
-        //echo $this->user->accounts()->get();        
-
-    }*/
-
-/*
-
-    public function testLogin() {
-
-
-
-        $response = $this->post('api/auth/login', [
-            'email' => 'sergi.redorta@hotmail.com',
-            'password' => 'Secure0',
-            'keepconnected' => false
-        ]);
-        dd(User::where('email', 'sergi.redorta@hotmail.com')->get()->first());
-        dd($response->json()); //This is our response
-
-        $response->assertStatus(200);  //expected status
-    }*/
-
-/*
-    public function testIncorrectData() {
-        $response = $this->post('api/user/document/add', [
+        $response = $this->post('api/user/attachment/add', [
             'attachable_type' => 'toto',
             'attachable_id' => '3'
         ]);
-        $response->assertStatus(400);  //expected status
-    }*/
+        dd($response->json());
+        //$response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.required']);  //expected status*/
+    }
 
 }
