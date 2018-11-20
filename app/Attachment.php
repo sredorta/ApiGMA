@@ -31,7 +31,7 @@ class Attachment extends Model
 
     //In case input is not a base64 we load the default
     private function getDefaultBase64($default) {
-        switch ($avatar) {
+        switch ($default) {
             case "avatar":
                 return Storage::disk('public')->get('defaults/user-default.jpg');
                 break;

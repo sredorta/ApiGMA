@@ -31,7 +31,8 @@ class AttachmentTest extends TestCase {
         //Open image and get base64
         //dd(Storage::disk('public')->exists('test_files/test.jpg' ));
         //Storage::disk('public')->put($path . $filename . "/orig.jpeg", $stream);
-        $image = base64_encode(Storage::disk('public')->get('test_files/test.jpg' )); //Need to assert if file not exists
+
+        $image = base64_encode(Storage::disk('public')->get('test_files/testvertical.jpg' )); //Need to assert if file not exists
         $image = "data:image/jpeg;base64," . $image;
         $pdf = base64_encode(Storage::disk('public')->get('test_files/test.pdf' ));
         $pdf = "data:image/jpeg;base64," . $pdf;
