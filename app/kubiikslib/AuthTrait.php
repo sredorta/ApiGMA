@@ -353,11 +353,11 @@ trait AuthTrait {
       $account->save();
 
       //Send email with new password
-      $data = ['html' => "<div><h2>" . __('auth.reset_title') . "</h2>
-      <p>". __('auth.reset_text1') . "<span style=\"font-weight:bold\">". $newPass . "</span></p>
-      <p>" . __('auth.reset_text2') .  $account->access . "</p>
+      $data = ['html' => "<div><h2>" . __('email.reset_title') . "</h2>
+      <p>". __('email.reset_text1') . "<span style=\"font-weight:bold\">". $newPass . "</span></p>
+      <p>" . __('email.reset_text2') .  $account->access . "</p>
       </div>"];
-      $this->sendEmail($user->email, __('auth.reset_subject'), $data);
+      $this->sendEmail($user->email, __('email.reset_subject'), $data);
 
       return response()->json(['response' => 'success','message' => __('auth.reset_success')], 200); 
   }
@@ -516,6 +516,162 @@ trait AuthTrait {
         //Invalidate the token
         return response()->json([],204); 
     }    
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  addAccount:
+    //
+    //  Adds an account to specified user id with given access
+    //  Only admins can do this
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////
+    public function addAccount(Request $request) {    
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|numeric',
+            'access' => 'required|string'
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors()->first(),400);
+        }
+        //Check that access is valid
+        if (!in_array($request->access, Config::get('constants.ACCESS_AVAILABLE'))) {
+            return response()->json(['response' => 'error','message' => __('auth.account_not_available')], 400);
+        }
+        $user = User::find($request->user_id);
+        if ($user === null) {
+            return response()->json(['response' => 'error','message' => __('auth.user_not_found')], 400);
+        }
+        //Check that user does not already have this access
+        if ($user->accounts()->where('access', $request->access)->first() !== null) {
+            return response()->json(['response' => 'error','message' => __('auth.account_already')], 400);
+        }
+        //Add the access
+        $pass = Helper::generatePassword(8);
+        $account = new Account;
+        $account->key = Helper::generateRandomStr(30);
+        $account->password = Hash::make($pass, ['rounds' => 12]);
+        $account->access = $request->access;
+        $user->accounts()->save($account);
+
+        //Add notification to user
+        $notification = new Notification;
+        $notification->text = __('notification.account_added', ['account'=>$request->access]);
+        $user->notifications()->save($notification);
+        //Send email 
+        $data = ['html' => "<div><h2>" . __('email.account_add_title', ['account'=>$request->access] ) . "</h2>
+        <p>". __('email.account_add_text1') . "<span style=\"font-weight:bold\">". $pass . "</span></p>
+        <p>" . __('email.account_add_text2', ['account'=>$request->access]) .  $request->access . "</p>
+        </div>"];
+        $this->sendEmail($user->email, __('email.account_add_subject', ['account'=>$request->access]), $data);
+      
+        //Return no data but success
+        return response()->json([],204); 
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  deleteAccount:
+    //
+    //  Deletes an account from specified user id
+    //  Only admins can do this
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////
+    public function deleteAccount(Request $request) {    
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|numeric',
+            'access' => 'required|string'
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors()->first(),400);
+        }
+        //Check that access is valid
+        if (!in_array($request->access, Config::get('constants.ACCESS_AVAILABLE'))) {
+            return response()->json(['response' => 'error','message' => __('auth.account_not_available')], 400);
+        }
+        $user = User::find($request->user_id);
+        if ($user === null) {
+            return response()->json(['response' => 'error','message' => __('auth.user_not_found')], 400);
+        }
+        //Check that user does have this access
+        $account = $user->accounts()->where('access', $request->access)->get();
+        if ($account->count() === 0) {
+            return response()->json(['response' => 'error','message' => __('auth.account_not_found')], 400);
+        }
+        //remove the account
+        $account->last()->delete();
+
+        //Add notification to user
+        $notification = new Notification;
+        $notification->text = __('notification.account_deleted', ['account'=>$request->access]);
+        $user->notifications()->save($notification);
+   
+        //Send email 
+        $data = ['html' => "<div><h2>" . __('email.account_remove_title', ['account'=>$request->access] ) . "</h2>
+        <p>". __('email.account_remove_text1') . "</p>
+        </div>"];
+        $this->sendEmail($user->email, __('email.account_remove_subject', ['account'=>$request->access]), $data);
+      
+        //Return no data but success
+        return response()->json([],204); 
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  toggleAccount:
+    //
+    //  Toggles account Pré-inscrit to Member and viceversa from specified user id
+    //  Only admins can do this
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////
+    public function toggleAccount(Request $request) {    
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|numeric'
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors()->first(),400);
+        }
+
+        $user = User::find($request->user_id);
+        if ($user === null) {
+            return response()->json(['response' => 'error','message' => __('auth.user_not_found')], 400);
+        }
+
+        //Check that user does have one of the access access
+        $default = $user->accounts()->where('access', Config::get('constants.ACCESS_DEFAULT'))->get();
+        $member = $user->accounts()->where('access', Config::get('constants.ACCESS_MEMBER'))->get();
+        if ($default->count() == 0 && $member->count() == 1) {
+            $account = $member->last();
+            $account->access = Config::get('constants.ACCESS_DEFAULT');
+            $account->save();
+            //Add notification to user
+            $notification = new Notification;
+            $notification->text = __('notification.account_deleted', ['account'=> Config::get('constants.ACCESS_MEMBER')]);
+            $user->notifications()->save($notification);            
+            //Send email
+            $data = ['html' => "<div><h2>" . __('email.account_remove_title', ['account'=>Config::get('constants.ACCESS_MEMBER')] ) . "</h2>
+            <p>". __('email.account_remove_text1') . "</p>
+            </div>"];
+            $this->sendEmail($user->email, __('email.account_remove_subject', ['account'=>Config::get('constants.ACCESS_MEMBER')]), $data);
+            return response()->json([],204); 
+        } else if ($default->count() == 1 && $member->count() == 0) {
+            $account = $default->last();
+            $account->access = Config::get('constants.ACCESS_MEMBER');
+            $account->save();
+            //Add notification to user
+            $notification = new Notification;
+            $notification->text = __('notification.account_added', ['account'=> Config::get('constants.ACCESS_MEMBER')]);
+            $user->notifications()->save($notification);              
+            //send email
+            $data = ['html' => "<div><h2>" . __('email.account_toggle_membre_title') . "</h2>
+            <p>". __('email.account_toggle_membre_text') . "</p>
+            </div>"];
+            $this->sendEmail($user->email, __('email.account_toggle_membre_subject'), $data);
+            return response()->json([],204);
+        } else {
+            return response()->json(['response' => 'error','message' => __('auth.account_toggle')], 400);
+        }
+
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////
     //

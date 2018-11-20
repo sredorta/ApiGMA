@@ -52,6 +52,9 @@ Route::group(['middleware' => 'registered'], function ($router) {
 //Returns all data from all users including roles and accounts
 Route::group(['middleware' => 'admin'], function ($router) {
     Route::get('auth/lang/admin', 'AccountController@language');
+    Route::post('auth/account/create', 'AccountController@addAccount');         //Adds accounts to user
+    Route::delete('auth/account/delete', 'AccountController@deleteAccount');    //Removes account from user
+    Route::post('auth/account/toggle', 'AccountController@toggleAccount');      //toggles Pré-inscrit to Membre
     Route::get('roles' , 'RoleController@getRoles');              //Get all Roles
     Route::post('roles/attach' , 'RoleController@attachUser');    //Adds a role to a user
     Route::post('roles/detach' , 'RoleController@detachUser');    //Removes a role to a user

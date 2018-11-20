@@ -14,5 +14,6 @@ return [
     'ACCESS_DEFAULT' => 'Pré-inscrit',
     'ACCESS_MEMBER' => 'Membre',
     'ACCESS_ADMIN' => 'Admin',
+    'ACCESS_AVAILABLE' => ['Pré-inscrit', 'Membre', 'Admin'],
     'LANGUAGES' => ['en', 'fr']         //Supported languages
 ];
