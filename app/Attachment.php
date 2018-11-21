@@ -70,14 +70,31 @@ class Attachment extends Model
                 $file = '/defaults/userdefault.jpg';
                 break;
             default:
-                return null;
+                $file = null;
         }
-        $this->file_name = basename($file);
-        $this->file_extension = $this->getFileExtension($this->file_name);
-        $this->file_size =  Storage::disk('public')->size('/defaults/' . $this->file_name);
-        $this->url = $this->getUrl(true);
-        $this->mime_type = $this->getMimeType(true);
+        if ($file !== null) {
+            $this->file_name = basename($file);
+            $this->file_extension = $this->getFileExtension($this->file_name);
+            $this->file_size =  Storage::disk('public')->size('/defaults/' . $this->file_name);
+            $this->url = $this->getUrl(true);
+            $this->mime_type = $this->getMimeType(true);
         return $this;        
+        } else {
+            return null;
+        }
+    }
+
+    public function getTargetFile($file, $default) {
+        if($file !== null) {
+            $this->uploadFile($file); //Automatically fills file_name, file_extension, file_size, url
+        } else {
+            $result = $this->getDefault($default); //Get default file and fills file_name...
+
+            if ($result == null) {
+//                return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $default])], 400);
+                return ['response'=>'error', 'message'=>__('attachment.default', ['default' => $default])];
+            }      
+        }
     }
 
     //Returns the file path from the public disk
@@ -91,12 +108,20 @@ class Attachment extends Model
         return $str;
     }   
 
-    public function createThumbs() {
+    //Create thumbnails if is image and if not defaults
+    private function createThumbs() {
         if (strpos($this->mime_type, 'image') !== false) {
-            Thumb::add($this->attachable_id);
+            if (strpos($this->url, '/defaults/') === false) {
+                Thumb::add($this->attachable_id);
+            }
         }
     }
 
+    //Save the register and create the thumbnails if required
+    public function save(array $options = []) {
+        parent::save($options);
+        $this->createThumbs();
+    }
 
     //Delete an attachable register and delete the associated data
     public function remove() {

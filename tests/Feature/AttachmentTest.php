@@ -30,7 +30,7 @@ class AttachmentTest extends TestCase {
     }
 
     public function cleanDirectories () {
-        Storage::disk('public')->deleteDirectory('uploads');
+        //Storage::disk('public')->deleteDirectory('uploads');
     }
 
     public function getFileForAttachment($attachment) {
@@ -62,7 +62,6 @@ class AttachmentTest extends TestCase {
                 'default' => 'avatar',                  //Default type if file is null
                 'alt_text' => "Alt text for image",     //alt text for images
                 'title' => "Title for image",           //title of the file
-                'root' => 'images'                      //root directory where to place file : TODO protect with some data checks
             ];
         } else {
             $path = dirname(__DIR__) . '/storage/test_files/test.jpg';

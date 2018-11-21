@@ -22,7 +22,6 @@ class AttachmentController extends Controller
         $validator = Validator::make($request->all(), [
             'attachable_id' => 'required|numeric',
             'attachable_type' => 'required|string',
-            'root' => "required|string|min:3",
             'default' => "required_without:file|string|min:3",                              //Default data if not providing the file
             'file' => 'required_without:default|mimes:jpeg,bmp,png,gif,svg,pdf|max:2048',    //File that we are uploading, max 2M
             'alt_text' => 'nullable|string|min:2|max:100',
@@ -41,24 +40,18 @@ class AttachmentController extends Controller
         if (!$subject) {
             return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_id', ['type' => $type, 'id'=>$id])], 400);
         }
+        
+        //THIS IS THE PART TO CREATE A NEW ATTACHABLE WITH THUMBNAILS FOR IMAGES/DEFAULTS...
         $attachment = new Attachment($request->only('attachable_type','attachable_id'));
-        $isDefault = false;
-        if($request->file !== null) {
-            $attachment->uploadFile($request->file('file')); //Automatically fills file_name, file_extension, file_size, url
-        } else {
-            $isDefault = true;
-            $result = $attachment->getDefault($request->default); //Get default file and fills file_name...
-            if ($result === null) {
-                return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $request->default])], 400);
-            }
+        $response = $attachment->getTargetFile($request->file('file'), $request->default);
+        if ($response !== null) {
+            return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $request->default])], 400);
         }
         $attachment->alt_text = $request->alt_text;
         $attachment->title = $request->title;
-        $attachment->save();
-        //Now create the thumbs if this is an image and there is no default image
-        if ($isDefault ==  false) {
-            $attachment->createThumbs();
-        }
+        $attachment->save(); //save and generate thumbs
+        //END OF ATTACHABLE CREATION
+
         return response()->json([], 204);
 
     }
