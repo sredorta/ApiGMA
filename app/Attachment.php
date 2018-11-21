@@ -5,9 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use App\kubiikslib\Helper;
-use App\kubiikslib\ImageTrait;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use finfo;
 use App\Thumb;
 
@@ -29,115 +29,86 @@ class Attachment extends Model
         return $this->hasMany('App\Thumb');
     }
 
-    //In case input is not a base64 we load the default
-    private function getDefaultBase64($default) {
+    //Gets file extension
+    private function getFileExtension($filename) {
+        return substr($filename, strrpos($filename, '.')+1); 
+    }
+
+    //Get URL of file
+    public function getUrl($default = false) {
+        if (!$default) {
+            return Storage::disk('public')->url('/uploads/' . $this->file_name);
+        } else {
+            return Storage::disk('public')->url('/defaults/' . $this->file_name);
+        }
+    }
+
+    //Expects a decoded base64 file and returns the mime type
+    private function getMimeType($default = false) {
+        if (!$default){
+            return Storage::disk('public')->mimeType('/uploads/' . $this->file_name);
+        } else {
+            return Storage::disk('public')->mimeType('/defaults/' . $this->file_name);
+        }
+    }
+
+    //Store the file uploaded
+    public function uploadFile(UploadedFile $file) {
+        $file = $file->storePublicly('uploads', ['disk'=> 'public']);
+        $this->file_name = basename($file);
+        $this->file_extension = $this->getFileExtension($this->file_name);
+        $this->file_size =  Storage::disk('public')->size('/uploads/' . $this->file_name);
+        $this->url = $this->getUrl();
+        $this->mime_type = $this->getMimeType();
+        return $this;
+    }
+
+    //In case input file is null we get the default file (this works for avatar, product...)
+    public function getDefault($default) {
         switch ($default) {
             case "avatar":
-                return Storage::disk('public')->get('defaults/user-default.jpg');
+                $file = '/defaults/userdefault.jpg';
                 break;
             default:
                 return null;
         }
+        $this->file_name = basename($file);
+        $this->file_extension = $this->getFileExtension($this->file_name);
+        $this->file_size =  Storage::disk('public')->size('/defaults/' . $this->file_name);
+        $this->url = $this->getUrl(true);
+        $this->mime_type = $this->getMimeType(true);
+        return $this;        
     }
 
-    //Expects base64 file and returns the data only
-    private function getFileFromBase64($base64) {
-        if (!preg_match('/^data:.*;base64,/',  $base64) ) return null;
-        return base64_decode(preg_replace('/^data:.*;base64,/', '', $base64));
+    //Returns the file path from the public disk
+    public function getPath() {
+        return str_replace(Storage::disk('public')->url(''), '', $this->url);
     }
 
-    //Expects a decoded base64 file and returns the mime type
-    private function getMimeType($buffer) {
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        return $finfo->buffer($buffer);
-    }
+    public function getRelativePath() {
+        $str = str_replace(Storage::disk('public')->url(''), '', $this->url);
+        $str = str_replace($this->file_name, '', $str);
+        return $str;
+    }   
 
-    //Gets media type
-    private function getMediaType($buffer) {
-        $mime = $this->getMimeType($buffer);
-        return preg_replace('/\/.*/', '', $mime);
-    }
-
-    //Gets media type
-    private function getMediaExtension($buffer) {
-        $mime = $this->getMimeType($buffer);
-        return preg_replace('/.*\//', '', $mime);
-    }
-
-    private function getPath($id, $type , $root) {
-        $type = preg_replace('/^App\\\/', '', $type);
-        return $root . '/' . $type . '/' . $id . '/';
-    }
-
-
-    //Add an attachable register and copy the associated data
-    public function add($array) {
-       $id = $array['id'];
-       $type = $array['type'];
-       $default = $array['default'];
-       $root = $array['root'];
-       $alt_text = $array['alt_text'];
-       $title = $array['title'];
-       $filedata = $array['filedata'];
-       unset($array);
-        //Validate that class is attachable and that we get a subject
-        if (!(class_exists($type) && method_exists($type, 'attachments'))) {
-            return null;
+    public function createThumbs() {
+        if (strpos($this->mime_type, 'image') !== false) {
+            Thumb::add($this->attachable_id);
         }
-        $subject = call_user_func($type . '::find', $id);
-        if (!$subject) {
-            return null;
-        }
-
-        //echo substr($filedata, 0 ,100);
-        $file = $this->getFileFromBase64($filedata);
-        //echo 'File is: ' . $file;
-        //Get the default image depending on application
-        if ($file === null) {
-            //echo "Loading default image !!!!!!!!!!!!";
-            $file = $this->getDefaultBase64($default);
-        }
-        if ($file === null) {
-            return null;    //The file could not be processed and there was no default
-        }
-
-        //Now store the file in the right place
-        $file_name = Helper::generateRandomStr(20);
-        $file_extension = $this->getMediaExtension($file);
-        $fileName = $file_name . "." . $file_extension;
-
-        Storage::disk('public')->put($this->getPath($id, $type, $root) . $fileName, $file);
-
-        //Add the record in the table
-        $attached = $subject->attachments()->create([ 
-            'default' => $default,
-            'file_path' => $this->getPath($id, $type, $root),
-            'file_name' => $file_name,
-            'file_extension' => $file_extension,
-            'file_size' => Storage::disk('public')->size($this->getPath($id, $type, $root) . $fileName, $file),
-            'url'=> env('APP_ENV') == 'testing' ? env('APP_URL'). "/tests/storage/" . $this->getPath($id, $type, $root) . $fileName : env('APP_URL'). "/storage/" . $this->getPath($id, $type, $root) . $fileName, 
-            'alt_text' => $alt_text,
-            'title' => $title,
-            'mime_type'=> $this->getMimeType($file)
-            ]);
-
-        //Now if media_type is image then we create all Thumbnails
-        if ($this->getMediaType($file) === 'image') {
-            Thumb::add($attached->id);
-        }
-        return $attached->with('thumbs');
     }
+
 
     //Delete an attachable register and delete the associated data
-    public function delete() {
-        //Remove all the related files
-        if ($this->type == "image") {
-            Storage::disk('public')->deleteDirectory($this->filepath);
-        } else {
-            //Need to remove the file here
+    public function remove() {
+        //Check if there are thumbs and delete files and db
+        foreach ($this->thumbs()->get() as $thumb) {
+            $thumb->remove();
         }
-        //Remove the register from the database
-        parent::delete();
+        //Delete the attachable itself only if is not default
+        if (strpos($this->url, '/defaults/') === false) {
+            Storage::disk('public')->delete($this->getPath());
+        }
+        $this->delete();    //Remove db record
     }
 
 

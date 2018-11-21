@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Validator;
 use App\User;
 use App\Account;
@@ -19,78 +20,75 @@ class AttachmentController extends Controller
 
         //Update firstName if is required
         $validator = Validator::make($request->all(), [
-            'id' => 'required|numeric',
-            'type' => 'required|string',
-            //'base64' => 'required|string'
+            'attachable_id' => 'required|numeric',
+            'attachable_type' => 'required|string',
+            'root' => "required|string|min:3",
+            'default' => "required_without:file|string|min:3",                              //Default data if not providing the file
+            'file' => 'required_without:default|mimes:jpeg,bmp,png,gif,svg,pdf|max:2048',    //File that we are uploading, max 2M
+            'alt_text' => 'nullable|string|min:2|max:100',
+            'title' => 'nullable|string|min:5|max:100'
         ]);        
+        $id = $request->attachable_id;
+        $type = $request->attachable_type;
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }      
         //Validate that id and type are attachables 
-        if (!(class_exists($request->type) && method_exists($request->type, 'attachments'))) {
-            return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_type', ['type' => $request->type])], 400); //422 ???
+        if (!(class_exists($type) && method_exists($type, 'attachments'))) {
+            return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_type', ['type' => $type])], 400); //422 ???
         }
-        $subject = call_user_func($request->type . "::find", $request->id);
+        $subject = call_user_func($type . "::find", $id);
         if (!$subject) {
-            return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_id', ['type' => $request->type, 'id'=>$request->id])], 400);
+            return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_id', ['type' => $type, 'id'=>$id])], 400);
         }
-
-        //Return valid
+        $attachment = new Attachment($request->only('attachable_type','attachable_id'));
+        $isDefault = false;
+        if($request->file !== null) {
+            $attachment->uploadFile($request->file('file')); //Automatically fills file_name, file_extension, file_size, url
+        } else {
+            $isDefault = true;
+            $result = $attachment->getDefault($request->default); //Get default file and fills file_name...
+            if ($result === null) {
+                return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $request->default])], 400);
+            }
+        }
+        $attachment->alt_text = $request->alt_text;
+        $attachment->title = $request->title;
+        $attachment->save();
+        //Now create the thumbs if this is an image and there is no default image
+        if ($isDefault ==  false) {
+            $attachment->createThumbs();
+        }
         return response()->json([], 204);
 
-        //Check if there is already a document with same function
-/*        if ($user->attachments->where('function', $request->get('function'))->count()) {
-            return response()
-            ->json([
-                'response' => 'error',
-                'message' => 'already_document'
-            ], 400);             
-        }*/
-
-        $attachment = new Attachment;
-        $attachment = $attachment->add([
-            'id' => $user->id, 
-            'type' => User::class, 
-            'default' => $request->get('function'),
-            'root' => "documents/users/". $user->id . "/", 
-            'alt_text' => 'this is my alt text',
-            'title' => 'this is my tytle',
-            'filedata' => $request->get('base64'),
-        ]);         
-          // ]$id, $type, $default, $root, $alt_text, $filedata) {     
-        return response()
-            ->json([
-                'response' => 'success',
-                'message' => 'upload_complete'
-            ], 200); 
     }
 
+    //Delete document
+    public function delete(Request $request) {
+        //Update firstName if is required
+        $validator = Validator::make($request->all(), [
+            'attachable_id' => 'required|numeric',
+            'attachable_type' => 'required|string',
+        ]);        
+        $id = $request->attachable_id;
+        $type = $request->attachable_type;
+        if ($validator->fails()) {
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        }      
+        //Validate that id and type are attachables 
+        if (!(class_exists($type) && method_exists($type, 'attachments'))) {
+            return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_type', ['type' => $type])], 400); //422 ???
+        }
+        $subject = call_user_func($type . "::find", $id);
+        if (!$subject) {
+            return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_id', ['type' => $type, 'id'=>$id])], 400);
+        }
+        //Delete attachment and associated thumbs if any
+        foreach ($subject->attachments()->get() as $attachment) {
+            $attachment->remove();
+        }
+        return response()->json([], 204);
 
-
-    public function storedata() {
-        $user = User::find(13);
-        echo $user->attachments->where('function','avatar')->first()->name;
     }
-
-    //
-    public function index() {
-        //return User::all();
-        return response()->json([
-            'message' => TrialAbstract::test()
-        ],200);        
-    }
-
-    public function imageTest() {
-        $avatar = 'data:image/png;base64,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';
-        $user = User::find(14);
-
-        $user->attachments->where("function","avatar")->first()->delete();
-
-        //$attachment = new Attachment;
-        //$attachment->add($user->id, User::class, "avatar", "images/users/". $user->id . "/", $avatar);
-        //$this->saveBase64Image($avatar, "myfiletest");
-
-    }
-
  
 }

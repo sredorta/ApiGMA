@@ -47,6 +47,7 @@ Route::group(['middleware' => 'registered'], function ($router) {
 
     //Document handling
     Route::post('attachment/create', 'AttachmentController@create');
+    Route::delete('attachment/delete', 'AttachmentController@delete');
 });
 
 //Returns all data from all users including roles and accounts
