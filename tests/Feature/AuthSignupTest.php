@@ -19,15 +19,18 @@ class AuthSignupTest extends TestCase {
         Mail::fake();        //Avoid sending emails
         //Storage::fake('public');     //Avoid writting to storage
         Artisan::call('migrate');
-        //$this->loginAs();   //Create user and login and get current user in $this->user
+        $this->cleanDirectories();
     }
 
     //Clean up after the test
     public function tearDown() {
         parent::tearDown();
-        //Storage::disk('public')->deleteDirectory('images');
+        $this->cleanDirectories();
     }
 
+    public function cleanDirectories () {
+        Storage::disk('public')->deleteDirectory('uploads');
+    }
     ////////////////////////////////////////////////////////////////////////
     // Parameters testing
     ////////////////////////////////////////////////////////////////////////

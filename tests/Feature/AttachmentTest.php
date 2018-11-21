@@ -30,7 +30,7 @@ class AttachmentTest extends TestCase {
     }
 
     public function cleanDirectories () {
-        //Storage::disk('public')->deleteDirectory('uploads');
+        Storage::disk('public')->deleteDirectory('uploads');
     }
 
     public function getFileForAttachment($attachment) {
@@ -261,4 +261,70 @@ class AttachmentTest extends TestCase {
         $this->assertFileExists($this->getFileDefault('avatar'));
     }    
 
+    //MOVE ME TO Signup test
+    public function testSignupWithAvatarFile() {
+        $testfile = "test.jpg";
+        $path = dirname(__DIR__) . '/storage/test_files/' . $testfile;
+        $mime = Storage::disk('public')->mimeType('/test_files/' . $testfile);
+        $file = new UploadedFile($path, $testfile, filesize($path), $mime, null, true);   
+        $data = [
+            'email' => 'sergi.redorta@hotmail.com',
+            'firstName' => 'sergi',
+            'lastName' => 'Redorta',
+            'mobile' => '0623133213',
+            'password'=> 'Secure0',
+            'avatar' => $file            
+        ];        
+        $response = $this->post('api/auth/signup', $data);
+        $user = User::all()->last();
+        //dd($user->attachments()->with('thumbs')->get()->toArray());
+        //dd(Attachment::find(1)->with('thumbs')->get()->toArray());
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.signup_success']);        
+        $this->assertDatabaseHas('users', [
+            'email' => 'sergi.redorta@hotmail.com'
+        ]);     
+        $this->assertDatabaseHas('attachments', [
+            'attachable_id' => 1,
+            'attachable_type' => User::class,
+            'alt_text' => 'avatar'
+        ]);        
+        $this->assertDatabaseHas('thumbs', [
+            'id' => 1,
+            'size' => 'full',
+            'width' => '285'
+        ]);        
+    }
+
+    //MOVE ME TO Signup test
+    public function testSignupWithOutAvatarFile() {
+        $testfile = "test.jpg";
+        $path = dirname(__DIR__) . '/storage/test_files/' . $testfile;
+        $mime = Storage::disk('public')->mimeType('/test_files/' . $testfile);
+        $file = new UploadedFile($path, $testfile, filesize($path), $mime, null, true);   
+        $data = [
+            'email' => 'sergi.redorta@hotmail.com',
+            'firstName' => 'sergi',
+            'lastName' => 'Redorta',
+            'mobile' => '0623133213',
+            'password'=> 'Secure0',         
+        ];        
+        $response = $this->post('api/auth/signup', $data);
+        $user = User::all()->last();
+        //dd($user->attachments()->with('thumbs')->get()->toArray());
+        //dd(Attachment::find(1)->with('thumbs')->get()->toArray());
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.signup_success']);        
+        $this->assertDatabaseHas('users', [
+            'email' => 'sergi.redorta@hotmail.com'
+        ]);     
+        $this->assertDatabaseHas('attachments', [
+            'attachable_id' => 1,
+            'attachable_type' => User::class,
+            'alt_text' => 'avatar'
+        ]);        
+        $this->assertDatabaseMissing('thumbs', [
+            'id' => 1,
+            'size' => 'full',
+            'width' => '285'
+        ]);        
+    }
 }

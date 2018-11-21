@@ -64,7 +64,8 @@ trait AuthTrait {
             'firstName' => 'required|min:2',
             'lastName' => 'required|min:2',
             'mobile' => 'required|min:10|max:10',
-            'password'=> 'required|min:4'
+            'password'=> 'required|min:4',
+            'avatar' => 'nullable|mimes:jpeg,bmp,png,gif,svg,pdf|max:2048',
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);          
@@ -91,13 +92,17 @@ trait AuthTrait {
             'language' => $language
         ]);
         //We now create the Attachable with the image uploaded
-/*        $attachment = new Attachment;
-        if ($attachment->add($user->id, User::class, "avatar","images/users/". $user->id . "/", $request->get('avatar'))== null) {
-            $user->delete();
-            return response()
-            ->json(['response' => 'error','message' => __('attachable.confirm_title')], 400);               
-        };
-*/
+        $attachment = new Attachment;
+        $attachment->attachable_id = $user->id;
+        $attachment->attachable_type = User::class;
+        $response = $attachment->getTargetFile($request->file('avatar'), "avatar");
+        if ($response !== null) {
+            return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $request->default])], 400);
+        }
+        $attachment->alt_text = "avatar";
+        $attachment->title = "avatar";
+        $attachment->save(); //save and generate thumbs
+
         //SECOND: we create the standard User (account)
         $account = new Account;
         $account->key = Helper::generateRandomStr(30);
