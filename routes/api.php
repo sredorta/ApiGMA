@@ -46,7 +46,7 @@ Route::group(['middleware' => 'registered'], function ($router) {
     //  all notifications, messages, imageables, attachables
 
     //Document handling
-    Route::post('user/attachment/add', 'AttachmentController@addAttachment');
+    Route::post('attachment/create', 'AttachmentController@create');
 });
 
 //Returns all data from all users including roles and accounts

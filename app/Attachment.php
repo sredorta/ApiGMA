@@ -71,7 +71,15 @@ class Attachment extends Model
 
 
     //Add an attachable register and copy the associated data
-    public function add($id, $type, $default, $root, $alt_text, $filedata) {     
+    public function add($array) {
+       $id = $array['id'];
+       $type = $array['type'];
+       $default = $array['default'];
+       $root = $array['root'];
+       $alt_text = $array['alt_text'];
+       $title = $array['title'];
+       $filedata = $array['filedata'];
+       unset($array);
         //Validate that class is attachable and that we get a subject
         if (!(class_exists($type) && method_exists($type, 'attachments'))) {
             return null;
@@ -81,9 +89,12 @@ class Attachment extends Model
             return null;
         }
 
+        //echo substr($filedata, 0 ,100);
         $file = $this->getFileFromBase64($filedata);
+        //echo 'File is: ' . $file;
         //Get the default image depending on application
         if ($file === null) {
+            //echo "Loading default image !!!!!!!!!!!!";
             $file = $this->getDefaultBase64($default);
         }
         if ($file === null) {
@@ -106,6 +117,7 @@ class Attachment extends Model
             'file_size' => Storage::disk('public')->size($this->getPath($id, $type, $root) . $fileName, $file),
             'url'=> env('APP_ENV') == 'testing' ? env('APP_URL'). "/tests/storage/" . $this->getPath($id, $type, $root) . $fileName : env('APP_URL'). "/storage/" . $this->getPath($id, $type, $root) . $fileName, 
             'alt_text' => $alt_text,
+            'title' => $title,
             'mime_type'=> $this->getMimeType($file)
             ]);
 

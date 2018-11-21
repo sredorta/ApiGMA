@@ -7,27 +7,36 @@ use App\User;
 use App\Account;
 use App\Attachment;
 use App\kubiikslib\Helper;
-use App\kubiikslib\ImageTrait;
 use JWTAuth;
 
 use Intervention\Image\ImageManager;
 
 class AttachmentController extends Controller
 {
-    use ImageTrait;
-
 
     //Add document
-    public function addAttachment(Request $request) {
+    public function create(Request $request) {
 
         //Update firstName if is required
         $validator = Validator::make($request->all(), [
-            'base64' => 'required|string'
+            'id' => 'required|numeric',
+            'type' => 'required|string',
+            //'base64' => 'required|string'
         ]);        
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
-        }       
-        $user = User::find($request->get('myUser'));
+        }      
+        //Validate that id and type are attachables 
+        if (!(class_exists($request->type) && method_exists($request->type, 'attachments'))) {
+            return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_type', ['type' => $request->type])], 400); //422 ???
+        }
+        $subject = call_user_func($request->type . "::find", $request->id);
+        if (!$subject) {
+            return response()->json(['response'=>'error', 'message'=>__('attachment.wrong_id', ['type' => $request->type, 'id'=>$request->id])], 400);
+        }
+
+        //Return valid
+        return response()->json([], 204);
 
         //Check if there is already a document with same function
 /*        if ($user->attachments->where('function', $request->get('function'))->count()) {
@@ -39,7 +48,16 @@ class AttachmentController extends Controller
         }*/
 
         $attachment = new Attachment;
-        $attachment = $attachment->add($user->id, User::class, $request->get('function'), "documents/users/". $user->id . "/", $request->get('base64'));         
+        $attachment = $attachment->add([
+            'id' => $user->id, 
+            'type' => User::class, 
+            'default' => $request->get('function'),
+            'root' => "documents/users/". $user->id . "/", 
+            'alt_text' => 'this is my alt text',
+            'title' => 'this is my tytle',
+            'filedata' => $request->get('base64'),
+        ]);         
+          // ]$id, $type, $default, $root, $alt_text, $filedata) {     
         return response()
             ->json([
                 'response' => 'success',
