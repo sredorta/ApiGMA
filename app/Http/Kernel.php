@@ -62,5 +62,6 @@ class Kernel extends HttpKernel
         'unregistered' => \App\Http\Middleware\Unregistered::class,
         'registered' => \App\Http\Middleware\Registered::class,
         'admin' => \App\Http\Middleware\Admin::class, 
+        'member' => \App\Http\Middleware\Member::class, 
     ];
 }

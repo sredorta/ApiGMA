@@ -23,6 +23,7 @@ return [
     'error'    => 'Error in the session',
     'login_required' => 'You need to be logged in to perform this operation',
     'admin_required' => 'This operation requires administrator rights',
+    'member_required' => 'This operation requires to be member',
     'already_loggedin' => 'This operation requires not to be logged in',
     'user_already_exists' => 'Email or phone already registered in the system',
     'user_not_found' => 'Requested user could not be found',

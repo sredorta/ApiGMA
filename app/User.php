@@ -25,7 +25,7 @@ class User extends Model
         return $this->hasMany('App\Account');
     }
     
-    //Return the roles of the profile
+    //Return the roles of the user
     public function roles() {
         return $this->belongsToMany('App\Role');
     }
@@ -35,6 +35,10 @@ class User extends Model
         return $this->hasMany('App\Notification');
     }
 
+    //Return the messages of the user
+    public function messages() {
+        return $this->belongsToMany('App\Message');
+    }
     /**
      * The attributes that are mass assignable.
      *

@@ -8,7 +8,7 @@ use App\Account;
 use App\User;
 use Illuminate\Support\Facades\Config;
 
-class Admin
+class Member
 {
     /**
      * Handle an incoming request.
@@ -19,10 +19,10 @@ class Admin
      */
     public function handle($request, Closure $next)
     {
-        if (Account::find($request->get('myAccount'))->access !== Config::get('constants.ACCESS_ADMIN')) {
+        if (Account::find($request->get('myAccount'))->access === Config::get('constants.ACCESS_DEFAULT')) {
             return response()->json([
                 'response' => 'error',
-                'message' => __('auth.admin_required')
+                'message' => __('auth.member_required')
             ],401);
         }
         return $next($request);

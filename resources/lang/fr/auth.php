@@ -21,6 +21,7 @@ return [
     'error'    => 'Problème de session',
     'login_required' => 'Vous devez être connecté pour éxécuter cette operation',
     'admin_required' => 'Vous devez être connecte en tant qu\'administrateur pour éxécuter cette operation',
+    'member_required' => 'Vous devez être connecté en tant que membre pour executer cette operation',
     'already_loggedin' => 'Vous ne pouvez pas être déjà connecté pour éxécuter cette operation',
     'user_already_exists' => 'Mobile ou email déjà enregistré dans le système',
     'user_not_found' => "L'utilizateur demandé n'est pas enregistré dans la base de donneés",

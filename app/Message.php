@@ -3,11 +3,11 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-class Role extends Model
+
+class Message extends Model
 {
     protected $fillable = [
-        'name','isUnique','description'
+        'subject','text','isRead'
     ];   
 
     //Define Role as a role to many users
@@ -17,10 +17,7 @@ class Role extends Model
 
 
     public function delete() {
-        DB::table('role_user')->where('role_id', $this->id)->delete();
+        //DB::table('role_user')->where('role_id', $this->id)->delete();
         parent::delete();
     }
-
-
-
 }

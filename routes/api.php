@@ -49,8 +49,16 @@ Route::group(['middleware' => 'registered'], function ($router) {
     Route::post('attachment/create', 'AttachmentController@create');
 });
 
+//Only if we are registerd with any access
+Route::group(['middleware' => ['registered', 'member']], function ($router) {
+    Route::post('message/send', 'MessageController@send');
+});
+
+
+
+
 //Returns all data from all users including roles and accounts
-Route::group(['middleware' => 'admin'], function ($router) {
+Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::get('auth/lang/admin', 'AccountController@language');
     Route::post('auth/account/create', 'AccountController@addAccount');         //Adds accounts to user
     Route::delete('auth/account/delete', 'AccountController@deleteAccount');    //Removes account from user
