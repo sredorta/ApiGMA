@@ -110,10 +110,8 @@ class Attachment extends Model
 
     //Create thumbnails if is image and if not defaults
     private function createThumbs() {
-        if (strpos($this->mime_type, 'image') !== false) {
-            if (strpos($this->url, '/defaults/') === false) {
-                Thumb::add($this->attachable_id);
-            }
+        if (preg_match('/image/', $this->mime_type) && !preg_match('/\/defaults\//',$this->url)) {
+            Thumb::add($this->id);
         }
     }
 

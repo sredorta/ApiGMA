@@ -7,12 +7,14 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use App\kubiikslib\Helper;
 use Artisan;
 use App\User;
 use App\Account;
+use App\Attachment;
 
 class AuthUpdateTest extends TestCase {
 
@@ -168,6 +170,32 @@ class AuthUpdateTest extends TestCase {
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
         $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.update_password']);
     }    
+
+
+    public function testUpdateAvatarValidNotDefault() {
+        $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $user = User::all()->last();
+        $testfile = "test.jpg";
+        $path = dirname(__DIR__) . '/storage/test_files/' . $testfile;
+        $mime = Storage::disk('public')->mimeType('/test_files/' . $testfile);
+        $file = new UploadedFile($path, $testfile, filesize($path), $mime, null, true);       
+
+        $data = [
+            'avatar' => $file
+        ];   
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/update', $data);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.update_success']);
+        $this->assertDatabaseMissing('attachments', [
+            'file_name' => "userdefault.jpg",
+        ]);
+        $this->assertDatabaseHas('attachments', [
+            'id' => 2,
+        ]);
+    }
+
+
+
 
     ////////////////////////////////////////////////////////////////////////
     // Valid testing

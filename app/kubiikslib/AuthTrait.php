@@ -65,7 +65,7 @@ trait AuthTrait {
             'lastName' => 'required|min:2',
             'mobile' => 'required|min:10|max:10',
             'password'=> 'required|min:4',
-            'avatar' => 'nullable|mimes:jpeg,bmp,png,gif,svg,pdf|max:2048',
+            'avatar' => 'nullable|mimes:jpeg,bmp,png,gif,svg|max:2048',
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);          
@@ -393,22 +393,38 @@ trait AuthTrait {
             $user->lastName = $request->lastName;
             $user->save();
             return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
-        }        
+        }
+
         //Update avatar if is required
         $validator = Validator::make($request->all(), [
-            'avatar' => 'required|string'
+            'avatar' => 'required_without:default|mimes:jpeg,bmp,png,gif,svg|max:2048',
+            'default' => 'required_without:avatar|boolean',
         ]);        
+
         if (!$validator->fails()) {
-            //Delete the current avatar attachable
-            $attachment = $user->attachments->where('function','avatar')->first()->delete(); //Remove old avatar
+            //Default avatar
+            if ($request->default) {
+                $default = "avatar"; //Set default avatar
+                $avatar = null;
+            }  else {
+                $default = null;
+                $avatar = $request->avatar;
+            }
+            $attachmentToDelete = $user->attachments()->where("title", "avatar")->get()->last();
             $attachment = new Attachment;
-            $avatar = $attachment->add($user->id, User::class, "avatar","images/users/". $user->id . "/", $request->get('avatar')); //Add new one
-            $avatar = $avatar->filepath . $avatar->name;
-            return response()->json([
-                'response' => 'success',
-                'message' => __('auth.update_success'),
-                'avatar' => $avatar
-            ], 200);
+            $attachment->attachable_id = $user->id;
+            $attachment->attachable_type = User::class;
+            //$response = $attachment->getTargetFile($request->file('avatar'), "avatar");
+            $response = $attachment->getTargetFile($avatar, $default);
+            if ($response !== null) {
+                return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $default])], 400);
+            }
+            $attachment->alt_text = "avatar";
+            $attachment->title = "avatar";
+            $attachment->save(); //save and generate thumbs
+            $attachmentToDelete->delete();
+            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
+
         } 
 
         //Update mobile if is required

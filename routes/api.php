@@ -47,7 +47,6 @@ Route::group(['middleware' => 'registered'], function ($router) {
 
     //Document handling
     Route::post('attachment/create', 'AttachmentController@create');
-    Route::delete('attachment/delete', 'AttachmentController@delete');
 });
 
 //Returns all data from all users including roles and accounts
@@ -61,6 +60,7 @@ Route::group(['middleware' => 'admin'], function ($router) {
     Route::post('roles/detach' , 'RoleController@detachUser');    //Removes a role to a user
     Route::post('roles/create' , 'RoleController@create');        //Creates a new role
     Route::delete('roles/delete' , 'RoleController@delete');        //Deletes a role
+    Route::delete('attachment/delete', 'AttachmentController@delete'); //Deletes a attachment by id
 });
 
 

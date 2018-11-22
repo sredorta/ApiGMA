@@ -8,6 +8,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
+use Illuminate\Support\Facades\Hash;
+use App\kubiikslib\Helper;
+
 use Artisan;
 use App\User;
 use App\Account;
@@ -59,7 +62,7 @@ class AttachmentTest extends TestCase {
                 'attachable_id' => 50,                            
                 'attachable_type' => 'dummy',              
                 'file' => $file,                        //Uploaded file
-                'default' => 'avatar',                  //Default type if file is null
+                //'default' => 'avatar',                  //Default type if file is null
                 'alt_text' => "Alt text for image",     //alt text for images
                 'title' => "Title for image",           //title of the file
             ];
@@ -72,7 +75,6 @@ class AttachmentTest extends TestCase {
                 'default' => 'avatar',                  //Default type if file is null
                 'alt_text' => "Alt text for image",     //alt text for images
                 'title' => "Title for image",           //title of the file
-                'root' => 'images'                      //root directory where to place file : TODO protect with some data checks
             ];
         }
         return $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/attachment/create', array_merge($default, $data));
@@ -83,7 +85,7 @@ class AttachmentTest extends TestCase {
         $this->loginAs();
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
         $user = User::all()->last();
-        $response = $this->callController('test.jpg',['attachable_id'=> $user->id]);
+        $response = $this->callController('test.jpg',['attachable_id'=> $user->id, 'title'=> 'test title']);
 
         $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'attachment.wrong_type']);  //expected status*/
     }
@@ -111,10 +113,12 @@ class AttachmentTest extends TestCase {
         $user = User::all()->last();
         $response = $this->callController('test.jpg',['attachable_id'=> 1, 'attachable_type'=> User::class]);
         $response->assertStatus(204);
-        $attachment = Attachment::find(1);
+        $attachment = Attachment::find(2);
+        //dd($attachment->toArray());
         $this->assertFileExists($this->getFileForAttachment($attachment));
         //Check attachment database
         $this->assertDatabaseHas('attachments', [
+            'id' => 2,
             'attachable_id' => 1,
             'attachable_type' => User::class,
             'file_extension' => 'jpeg',
@@ -122,7 +126,7 @@ class AttachmentTest extends TestCase {
         ]);        
         //Check for thumbs
         $this->assertDatabaseHas('thumbs', [
-            'attachment_id' => 1,
+            'attachment_id' => 2,
             'size' => 'medium',
             'width' => '285',
         ]);
@@ -135,8 +139,7 @@ class AttachmentTest extends TestCase {
         $user = User::all()->last();
         $response = $this->callController('testvertical.jpg',['attachable_id'=> 1, 'attachable_type'=> User::class]);
         $response->assertStatus(204);
-
-        $attachment = Attachment::find(1);
+        $attachment = Attachment::find(2);
         $this->assertFileExists($this->getFileForAttachment($attachment));
         //Check attachment database
         $this->assertDatabaseHas('attachments', [
@@ -147,14 +150,14 @@ class AttachmentTest extends TestCase {
         ]);        
         //Check for thumbs
         $this->assertDatabaseHas('thumbs', [
-            'attachment_id' => 1,
+            'attachment_id' => 2,
             'size' => 'medium',
             'width' => '270',
             'height' => '360'
         ]);
         //Check thumbnail is square
         $this->assertDatabaseHas('thumbs', [
-            'attachment_id' => 1,
+            'attachment_id' => 2,
             'size' => 'thumbnail',
             'width' => '50',
             'height' => '50'
@@ -180,7 +183,7 @@ class AttachmentTest extends TestCase {
         $response = $this->callController('test.pdf',['attachable_id'=> 1, 'attachable_type'=> User::class]);
         $response->assertStatus(204);
 
-        $attachment = Attachment::find(1);
+        $attachment = Attachment::find(2);
         $this->assertFileExists($this->getFileForAttachment($attachment));
         //Check attachment database
         $this->assertDatabaseHas('attachments', [
@@ -198,6 +201,22 @@ class AttachmentTest extends TestCase {
         $response = $this->callController('testtoolarge.pdf',['attachable_id'=> 1, 'attachable_type'=> User::class]);
         $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'validation.max.file']);  //expected status*/
     }    
+
+    public function testAttachmentCreateAlreadyExistsFilePDF() {
+        $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $user = User::all()->last();
+        $response = $this->callController('test.pdf',['attachable_id'=> $user->id, 'attachable_type'=> User::class, 'title'=> 'CERTIF_2018']);
+        $response->assertStatus(204);
+        $response = $this->callController('test.pdf',['attachable_id'=> $user->id, 'attachable_type'=> User::class, 'title' => 'CERTIF_2018']);
+        $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'attachment.already']);  //expected status*/
+        //Check attachment database
+        $this->assertDatabaseMissing('attachments', [
+            'id' => 3
+        ]);  
+    }    
+
+
 
     public function testAttachmentCreateInCorrectDefault() {
         $this->loginAs();
@@ -224,7 +243,7 @@ class AttachmentTest extends TestCase {
         ]);          
         //Check for thumbs not being generated
         $this->assertDatabaseMissing('thumbs', [
-            'attachment_id' => 1,
+            'attachment_id' => 2,
             'size' => 'medium',
             'width' => '270',
             'height' => '360'
@@ -233,14 +252,30 @@ class AttachmentTest extends TestCase {
 
     //Attachment delete tests
     public function testAttachmentDeleteCorrect() {
-        $this->loginAs();
+        $this->signup();
+        $user = User::all()->last();
+        $account = new Account;
+        $account->user_id = $user->id;
+        $account->key = Helper::generateRandomStr(30);
+        $account->password = Hash::make('Secure10', ['rounds' => 12]);
+        $account->access = Config::get('constants.ACCESS_ADMIN');
+        $user->accounts()->save($account); 
+        $this->login(['password'=>'Secure10','access' => Config::get('constants.ACCESS_ADMIN')]);
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
         $user = User::all()->last();
         $response = $this->callController('test.jpg',['attachable_id'=> 1, 'attachable_type'=> User::class]);
-        $attachment = Attachment::find(1);
+        $attachment = Attachment::find(2);
         $thumb = $attachment->thumbs()->first();
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/attachment/delete', ["attachable_id"=>1,"attachable_type"=>User::class]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/attachment/delete', ["id"=>2]);
         $response->assertStatus(204);
+        $this->assertDatabaseMissing('attachments', [
+            'id' => 2
+        ]);          
+        //Check for thumbs not being generated
+        $this->assertDatabaseMissing('thumbs', [
+            'attachment_id' => $thumb->attachment_id,
+            'size' => 'medium',
+        ]);        
         //Check that files have been removed
         $this->assertFileNotExists($this->getFileForAttachment($attachment));
         $this->assertFileNotExists($this->getAttachedThumb($attachment));
@@ -248,18 +283,40 @@ class AttachmentTest extends TestCase {
 
     //Attachment delete tests
     public function testAttachmentDeleteCorrectAvatarNotDeleted() {
-        $this->loginAs();
+        $this->signup();
+        $user = User::all()->last();
+        $account = new Account;
+        $account->user_id = $user->id;
+        $account->key = Helper::generateRandomStr(30);
+        $account->password = Hash::make('Secure10', ['rounds' => 12]);
+        $account->access = Config::get('constants.ACCESS_ADMIN');
+        $user->accounts()->save($account); 
+        $this->login(['password'=>'Secure10','access' => Config::get('constants.ACCESS_ADMIN')]);
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+
         $user = User::all()->last();
         $response = $this->callController(null,['attachable_id'=> 1, 'attachable_type'=> User::class, 'default'=>'avatar']);
         $attachment = Attachment::find(1);
         $thumb = $attachment->thumbs()->first();
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/attachment/delete', ["attachable_id"=>1,"attachable_type"=>User::class]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/attachment/delete', ["id"=>1]);
         $response->assertStatus(204);
         //Check that files have been removed
         $this->assertFileNotExists($this->getFileForAttachment($attachment));
         $this->assertFileExists($this->getFileDefault('avatar'));
     }    
+
+    //Attachment delete tests
+    public function testAttachmentDeleteInvalidGuard() {
+        $this->loginAs();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $user = User::all()->last();
+        $response = $this->callController('test.jpg',['attachable_id'=> 1, 'attachable_type'=> User::class]);
+        $attachment = Attachment::find(2);
+        $thumb = $attachment->thumbs()->first();
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/attachment/delete', ["id"=>2]);
+        $response->assertStatus(401)->assertJson(['response'=>'error', 'message'=>'auth.admin_required']);;
+    }
+
 
     //MOVE ME TO Signup test
     public function testSignupWithAvatarFile() {
@@ -290,6 +347,7 @@ class AttachmentTest extends TestCase {
         ]);        
         $this->assertDatabaseHas('thumbs', [
             'id' => 1,
+            'attachment_id' => 1,
             'size' => 'full',
             'width' => '285'
         ]);        
@@ -323,6 +381,7 @@ class AttachmentTest extends TestCase {
         ]);        
         $this->assertDatabaseMissing('thumbs', [
             'id' => 1,
+            'attachment_id' => 1,
             'size' => 'full',
             'width' => '285'
         ]);        
