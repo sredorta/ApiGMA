@@ -37,8 +37,9 @@ class User extends Model
 
     //Return the messages of the user
     public function messages() {
-        return $this->belongsToMany('App\Message');
+        return $this->belongsToMany('App\Message')->withPivot('from_user_id','from_user_first','from_user_last', 'isRead');    //$user->messages() : get the messages to us
     }
+
     /**
      * The attributes that are mass assignable.
      *

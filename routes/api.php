@@ -52,6 +52,9 @@ Route::group(['middleware' => 'registered'], function ($router) {
 //Only if we are registerd with any access
 Route::group(['middleware' => ['registered', 'member']], function ($router) {
     Route::post('message/send', 'MessageController@send');
+    Route::get('messages', 'MessageController@getAll');
+    Route::post('message/markread', 'MessageController@markAsRead');
+
 });
 
 

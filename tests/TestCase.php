@@ -94,6 +94,22 @@ abstract class TestCase extends BaseTestCase
         $this->login(array_merge($default, $data));
         return $this->getAuthUser();
     }
+    /////////////////////////////////////////////////////////////////////////////////
+    //Create a user and login and return the authenticated user Member account
+    /////////////////////////////////////////////////////////////////////////////////
+    public function loginAsMember() {
+        $this->signup();
+        $user = User::all()->last();
+        $account = new Account;
+        $account->user_id = $user->id;
+        $account->key = Helper::generateRandomStr(30);
+        $account->password = Hash::make('Secure10', ['rounds' => 12]);
+        $account->access = Config::get('constants.ACCESS_MEMBER');
+        $user->accounts()->save($account); 
+        $this->login(['password'=>'Secure10','access' => Config::get('constants.ACCESS_MEMBER')]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+    }
+
 
     /////////////////////////////////////////////////////////////////////////////////
     //Create a user with multiple access and login with the required access
@@ -136,6 +152,7 @@ abstract class TestCase extends BaseTestCase
     /////////////////////////////////////////////////////////////////////////////////
     protected function logout() {
         $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/auth/logout');
+        $this->token = null;
     }
 
     /////////////////////////////////////////////////////////////////////////////////
