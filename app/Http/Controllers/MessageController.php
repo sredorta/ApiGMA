@@ -62,7 +62,6 @@ class MessageController extends Controller
             $message->from_last = $pivot->from_user_last;
             $message->isRead = $pivot->isRead;
             array_push($result, $message);
-            //array_push($result, ["id"=>$message->id, "subject"=>$message->subject, "text"])
         }
         return response()->json($result,200);
     }
@@ -86,5 +85,23 @@ class MessageController extends Controller
         return response()->json([],204);
     }    
 
+    //Delete message
+    public function delete(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id'   => 'required|exists:messages,id'
+        ]);      
+        if ($validator->fails()) {
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        }      
+        $user = User::find($request->get("myUser"));
+        $message = Message::find($request->id);
+        $user->messages()->detach($request->id);
+        if ($message->users()->get()->count() == 0) {
+            $message->delete();
+        }
+
+
+        return response()->json([],204);
+    }    
 
 }

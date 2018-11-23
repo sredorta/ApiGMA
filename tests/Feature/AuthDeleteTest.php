@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use App\kubiikslib\Helper;
 use Artisan;
+use App\Attachment;
 use App\User;
 use App\Account;
 
@@ -52,12 +53,14 @@ class AuthDeleteValidateTest extends TestCase {
             'title' => "CERTIFICAT_2018",           //title of the file
         ];
         $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/attachment/create', $default);
-
         $this->assertDatabaseHas('attachments', [
             'attachable_id' => $user->id,
             'attachable_type' => User::class
         ]);
-       
+        $attachment = Attachment::all()->last()->toArray();
+        $this->assertFileNotExists(dirname(__DIR__) . '/storage/uploads/' . $attachment['file_name']);
+    
+
         $response = $this->delete('api/auth/delete');
         $response->assertStatus(204);
         $this->assertDatabaseMissing('users', [
@@ -71,12 +74,19 @@ class AuthDeleteValidateTest extends TestCase {
             'attachable_id' => $user->id,
             'attachable_type' => User::class
         ]);
+        //Need to check that file is not there anymore !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         $this->assertDatabaseMissing('notifications', [
             'user_id' => $user->id
         ]);
+        $this->assertDatabaseMissing('message_user', [
+            'user_id' => $user->id
+        ]);
+        //Message delete is done in MessageTest
+
     //TODO: Verify anything that is being added roles,groups...
     }
+
 
 
 

@@ -54,7 +54,7 @@ Route::group(['middleware' => ['registered', 'member']], function ($router) {
     Route::post('message/send', 'MessageController@send');
     Route::get('messages', 'MessageController@getAll');
     Route::post('message/markread', 'MessageController@markAsRead');
-
+    Route::delete('message/delete', 'MessageController@delete');
 });
 
 

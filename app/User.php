@@ -65,8 +65,18 @@ class User extends Model
         // delete all related roles (needs to be done with all related tables)
         $this->roles()->detach();
         //$this->groups()->detach();
+
+        //Messages removal
+        $messages = $this->messages()->get();
+        $this->messages()->detach();
+        foreach ($messages as $message) {
+            if ($message->users()->get()->count() == 0) {
+                $message->delete();
+            }
+        }
+
         $this->notifications()->delete();
-        $this->attachments()->delete();
+        $this->attachments()->delete();     // FIX ME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         $this->accounts()->delete();
 
         //Parent delete
