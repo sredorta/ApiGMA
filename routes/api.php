@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 Route::group(['middleware' => 'any'], function ($router) {
     Route::get('auth/user', 'AccountController@getAuthUser');
     Route::get('auth/lang/any', 'AccountController@language');
+    Route::get('pages', 'PageController@getAll'); 
 });
 
 //Only if we are not loggedIn
@@ -80,6 +81,14 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::delete('groups/delete' , 'GroupController@delete');        //Deletes a group    
 
     Route::delete('attachment/delete', 'AttachmentController@delete'); //Deletes a attachment by id
+
+    //PAGE HANDLING
+
+    Route::delete('pages/delete', 'PageController@delete');
+    Route::post('pages/create', 'PageController@create');
+    //Route::get('pages/attachments', 'PageController@getAttachments'); //MOVE ME TO ANY !!!!
+    //Route::post('pages/attachments/create', 'PageController@addAttachment');
+
 });
 
 
