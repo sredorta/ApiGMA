@@ -29,6 +29,11 @@ class User extends Model
     public function roles() {
         return $this->belongsToMany('App\Role');
     }
+    
+    //Return the groups of the user
+    public function groups() {
+        return $this->belongsToMany('App\Group');
+    }    
 
     //Return the notifications of the user
     public function notifications() {
@@ -37,7 +42,7 @@ class User extends Model
 
     //Return the messages of the user
     public function messages() {
-        return $this->belongsToMany('App\Message')->withPivot('from_user_id','from_user_first','from_user_last', 'isRead');    //$user->messages() : get the messages to us
+        return $this->hasMany('App\Message');
     }
 
     /**
@@ -64,19 +69,17 @@ class User extends Model
     {
         // delete all related roles (needs to be done with all related tables)
         $this->roles()->detach();
-        //$this->groups()->detach();
+        $this->groups()->detach();
 
         //Messages removal
-        $messages = $this->messages()->get();
-        $this->messages()->detach();
-        foreach ($messages as $message) {
-            if ($message->users()->get()->count() == 0) {
-                $message->delete();
-            }
+        $this->messages()->delete();
+        $this->notifications()->delete();
+
+        //Remove the attachments
+        foreach ($this->attachments()->get() as $attachment) {
+            $attachment->remove();
         }
 
-        $this->notifications()->delete();
-        $this->attachments()->delete();     // FIX ME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         $this->accounts()->delete();
 
         //Parent delete

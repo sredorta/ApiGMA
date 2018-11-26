@@ -87,5 +87,6 @@ class Thumb extends Model
         Storage::disk('public')->delete($this->getPath());
         $this->delete();    //Remove db record
     }
+    
 
 }

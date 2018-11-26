@@ -63,7 +63,7 @@ class RoleTest extends TestCase {
             'access' => Config::get('constants.ACCESS_ADMIN')]);
 
         $response = $this->delete('api/roles/delete', ['id'=>10]);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']);        
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.exists']);        
     }
 
     public function testRoleDeleteInvalidIdFormat() {
@@ -122,7 +122,7 @@ class RoleTest extends TestCase {
         
         $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
         $response  = $this->post('api/roles/attach', ['role_id'=>10, 'user_id'=>1]);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']); 
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.exists']); 
     }
 
     public function testRoleAttachInValidRoleIdFormat() {
@@ -147,7 +147,7 @@ class RoleTest extends TestCase {
         
         $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
         $response  = $this->post('api/roles/attach', ['role_id'=>1, 'user_id'=>10]);
-        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']); 
+        $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.exists']); 
     }
     
     public function testRoleAttachInValidUserIdFormat() {
@@ -253,7 +253,7 @@ class RoleTest extends TestCase {
             
             $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
             $response  = $this->post('api/roles/detach', ['role_id'=>10, 'user_id'=>1]);
-            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']); 
+            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.exists']); 
         }
     
         public function testRoleDetachInValidRoleIdFormat() {
@@ -278,7 +278,7 @@ class RoleTest extends TestCase {
             
             $response = $this->post('api/roles/create', ['isUnique'=>false, 'name'=>'test', 'description'=>'This is a long description because if not will fail']);
             $response  = $this->post('api/roles/detach', ['role_id'=>1, 'user_id'=>10]);
-            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'role.missing']); 
+            $response->assertStatus(400)->assertJson(['response' => 'error','message' => 'validation.exists']); 
         }
         
         public function testRoleDetachInValidUserIdFormat() {

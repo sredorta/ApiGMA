@@ -5,57 +5,55 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Validator;
-use App\Role;
+use App\Group;
 use App\User;
 use App\Notification;
 
-class RoleController extends Controller
+class GroupController extends Controller
 {
+
     //Get all roles available
-    public function getRoles(Request $request) {
-        $roles = Role::all();
-        return response()->json($roles->toArray(),200); 
+    public function getAll(Request $request) {
+        $groups = Group::all();
+        return response()->json($groups->toArray(),200); 
     }
 
-    //Adds a role from a user
+    //Adds a group from a user
     public function attachUser(Request $request) {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|numeric|exists:users,id',
-            'role_id' => 'required|numeric|exists:roles,id'
+            'group_id' => 'required|numeric|exists:groups,id'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400); 
         }          
-        $role = Role::find($request->role_id);
+        $group = Group::find($request->group_id);
         $user = User::find($request->user_id);
 
-        //Remove precedent attachment if is unique
-        if ($role->isUnique) {
-            DB::table('role_user')->where('role_id', $role->id)->delete();
-        }
         $notif = new Notification;
-        $notif->text = __('notificaiton.role_assign', ['role'=> Role::find($request->role_id)->name]);
+        $notif->text = __('notification.group_assign', ['group'=> $group->name]);
         $user->notifications()->save($notif);
-        $user->roles()->attach($request->role_id);
+
+        $user->groups()->attach($request->group_id);
         return response()->json(null,204); 
     }
 
-    //Removes a role from a user
+    //Removes a group from a user
     public function detachUser(Request $request) {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|numeric|exists:users,id',
-            'role_id' => 'required|numeric|exists:roles,id'
+            'group_id' => 'required|numeric|exists:groups,id'
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);   
         }
-        $role = Role::find($request->role_id);
+        $group = Group::find($request->group_id);
         $user = User::find($request->user_id);
 
-        $user->roles()->detach($role->id);
+        $user->groups()->detach($group->id);
         $notif = new Notification;
-        $notif->text = __('notification.role_unassign', ['role'=> Role::find($request->role_id)->name]);
+        $notif->text = __('notification.group_unassign', ['group'=> $group->name]);
         $user->notifications()->save($notif);
         return response()->json(null,204); 
     }
@@ -63,33 +61,31 @@ class RoleController extends Controller
     //create a new Role
     public function create(Request $request) {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|min:3|max:50|unique:roles,name',
-            'isUnique' => 'nullable|boolean',
+            'name' => 'required|string|min:3|max:100|unique:groups,name',
             'description' => 'required|min:10|max:500'
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);    
         }
-        $isUnique = $request->isUnique;
-        if ($request->isUnique == null) $request->isUnique = false;
-        $role = Role::create([
+        $group = Group::create([
             'name' => $request->name,
-            'isUnique' => $isUnique,
             'description' => $request->description
         ]);     
-        return response()->json($role,200); 
+        return response()->json($group,200); 
     }    
 
      //delete a Role
      public function delete(Request $request) {
         $validator = Validator::make($request->all(), [
-            'id' => 'required|numeric|exists:roles,id'
+            'id' => 'required|numeric|exists:groups,id'
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400); 
         }          
         //When a role is removed all attached roles in the pivot are removed !
-        Role::find($request->id)->delete();
+        $group = Group::find($request->id);
+
+        Group::find($request->id)->delete();
         return response()->json(null,204); 
     }       
 }

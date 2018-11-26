@@ -55,6 +55,10 @@ Route::group(['middleware' => ['registered', 'member']], function ($router) {
     Route::get('messages', 'MessageController@getAll');
     Route::post('message/markread', 'MessageController@markAsRead');
     Route::delete('message/delete', 'MessageController@delete');
+
+    Route::get('groups' , 'GroupController@getAll');              //Get all Groups
+    Route::get('roles' , 'RoleController@getRoles');              //Get all Roles
+
 });
 
 
@@ -66,11 +70,15 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::post('auth/account/create', 'AccountController@addAccount');         //Adds accounts to user
     Route::delete('auth/account/delete', 'AccountController@deleteAccount');    //Removes account from user
     Route::post('auth/account/toggle', 'AccountController@toggleAccount');      //toggles Pré-inscrit to Membre
-    Route::get('roles' , 'RoleController@getRoles');              //Get all Roles
     Route::post('roles/attach' , 'RoleController@attachUser');    //Adds a role to a user
     Route::post('roles/detach' , 'RoleController@detachUser');    //Removes a role to a user
     Route::post('roles/create' , 'RoleController@create');        //Creates a new role
     Route::delete('roles/delete' , 'RoleController@delete');        //Deletes a role
+    Route::post('groups/attach' , 'GroupController@attachUser');    //Adds a group to a user
+    Route::post('groups/detach' , 'GroupController@detachUser');    //Removes a group to a user
+    Route::post('groups/create' , 'GroupController@create');        //Creates a new group
+    Route::delete('groups/delete' , 'GroupController@delete');        //Deletes a group    
+
     Route::delete('attachment/delete', 'AttachmentController@delete'); //Deletes a attachment by id
 });
 

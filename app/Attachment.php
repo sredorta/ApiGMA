@@ -131,7 +131,7 @@ class Attachment extends Model
         if (strpos($this->url, '/defaults/') === false) {
             Storage::disk('public')->delete($this->getPath());
         }
-        $this->delete();    //Remove db record
+        parent::delete();    //Remove db record
     }
 
 

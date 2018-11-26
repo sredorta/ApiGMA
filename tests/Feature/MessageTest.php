@@ -33,6 +33,40 @@ class MessageTest extends TestCase {
         parent::tearDown();
     }
 
+    public function testMessageSendValidWithGroups() {
+        $this->signup(["email"=>"sergi.redorta2@hotmail.com", "mobile"=>"0623133222"]);
+        $this->signup(["email"=>"sergi.redorta3@hotmail.com", "mobile"=>"0623133233"]);
+        $this->signup(["email"=>"sergi.redorta4@hotmail.com", "mobile"=>"0623133244"]);
+        $this->signup();
+        $user = User::all()->last();
+        $account = new Account;
+        $account->user_id = $user->id;
+        $account->key = Helper::generateRandomStr(30);
+        $account->password = Hash::make('Secure10', ['rounds' => 12]);
+        $account->access = Config::get('constants.ACCESS_ADMIN');
+        $user->accounts()->save($account); 
+        $this->login(['password'=>'Secure10','access' => Config::get('constants.ACCESS_ADMIN')]);
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
+        $response = $this->post('api/groups/create', ['name'=>'test', 'description'=>'This is a long description because if not will fail']);
+        $response  = $this->post('api/groups/attach', ['user_id'=>1, 'group_id'=>1]);
+        $response  = $this->post('api/groups/attach', ['user_id'=>2, 'group_id'=>1]);
+        $response  = $this->post('api/groups/attach', ['user_id'=>3, 'group_id'=>1]);
+
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
+            "subject"   => "Message test2",
+            "text"      => "This is a message test2",
+            "to"        => ["users"=> [1], "groups"=>[1]]  //Array of users and groups with IDs
+            ]);            
+        //$user = User::find(1);
+        //dd($user->messages()->get()->toArray());
+        $this->assertDatabaseHas('messages', [
+            'id' => 1,
+            'user_id' => 1,
+            'from_id' => 4,
+            'to_user_list' => '1,2,3',
+            'to_group_list' => "1"
+        ]); 
+    }
 
 
 
@@ -43,70 +77,39 @@ class MessageTest extends TestCase {
         $this->signup(["email"=>"sergi.redorta4@hotmail.com", "mobile"=>"0623133244"]);
         $this->loginAsMember();
         $user = User::all()->last();
+        //USER 4 sends message to 1 2 3
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
             "subject"   => "Message test",
             "text"      => "This is a message test",
             "to"        => ["users"=> [1,2,3]]//, "groups"=>[1]]  //Array of users and groups with IDs
             ]);
-
+        //dd(Message::all()->toArray());
         $response->assertStatus(204);   //No error
         //Message exists
         $this->assertDatabaseHas('messages', [
             'id' => 1,
+            'user_id' => 1,
+            'from_id' => 4,
+            'to_user_list' => '1,2,3',
             'text' => "This is a message test",
         ]); 
-
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
-            'user_id' => 1,
-            'from_user_id' => 4
-        ]);   
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
+        $this->assertDatabaseHas('messages', [
+            'id' => 2,
             'user_id' => 2,
-            'from_user_id' => 4
-        ]);         
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
+            'from_id' => 4,
+            'to_user_list' => '1,2,3',
+            'text' => "This is a message test",
+        ]); 
+        $this->assertDatabaseHas('messages', [
+            'id' => 3,
             'user_id' => 3,
-            'from_user_id' => 4
-        ]);           
-        $this->assertDatabaseMissing('message_user', [
-            'user_id' => 4
-        ]);        
-    }
-
-
-    public function testMessageValidAccountAdminOneTo() {
-        //User 2 (admin) sends to 1
-        $this->signup(["email"=>"sergi.redorta2@hotmail.com", "mobile"=>"0623133222"]);
-        $this->loginAsMember();
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        
-        $user = User::all()->last();
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
-            "subject"   => "Message test",
-            "text"      => "This is a message test",
-            "to"        => ["users"=> [1]]//, "groups"=>[1]]  //Array of users and groups with IDs
-            ]);
-
-        $response->assertStatus(204);   //No error
-        //Message exists
-        $this->assertDatabaseHas('messages', [
-            'id' => 1,
+            'from_id' => 4,
+            'to_user_list' => '1,2,3',
             'text' => "This is a message test",
         ]); 
-
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
-            'user_id' => 1,
-            'from_user_id' => 2
-        ]);   
-        $this->assertDatabaseMissing('message_user', [
-            'message_id' => 1,
-            'user_id' => 2,
-            'from_user_id' => 2
-        ]);         
+        $this->assertDatabaseMissing('messages', [
+            'id' => 4
+        ]);                 
     }
 
     //Parameter testing
@@ -167,116 +170,43 @@ class MessageTest extends TestCase {
         $this->token = $result['token'];
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
         $response = $this->get('api/messages');
-        //dd($response->json());
-
-        //Message exists
-        $this->assertDatabaseHas('messages', [
-            'id' => 1,
-            'text' => "This is a message test",
-        ]); 
-        $this->assertDatabaseHas('messages', [
-            'id' => 2,
-            'text' => "This is a message test2",
-        ]); 
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
-            'user_id' => 1,
-            'from_user_id' => 4
-        ]);   
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 2,
-            'user_id' => 1,
-            'from_user_id' => 4
-        ]);       
-        $this->assertDatabaseMissing('message_user', [
-            'message_id' => 2,
-            'user_id' => 2,
-            'from_user_id' => 4
-        ]);        
-        //dd($response->json());    
+       //dd($response->json());
+       $this->assertDatabaseHas('messages', [
+        'id' => 1,
+        'user_id' => 1,
+        'from_id' => 4,
+        'to_user_list' => '1,2,3',
+        'text' => "This is a message test",
+    ]); 
+    $this->assertDatabaseHas('messages', [
+        'id' => 2,
+        'user_id' => 2,
+        'from_id' => 4,
+        'to_user_list' => '1,2,3',
+        'text' => "This is a message test",
+    ]); 
+    $this->assertDatabaseHas('messages', [
+        'id' => 3,
+        'user_id' => 3,
+        'from_id' => 4,
+        'to_user_list' => '1,2,3',
+        'text' => "This is a message test",
+    ]); 
+            //dd(Message::all()->toArray());
+    $this->assertDatabaseMissing('messages', [
+        'id' => 4,
+        'user_id' => 1,
+        'from_id' => 4,
+        'text' => "this is a message test2"
+    ]);  
+        
+    $this->assertDatabaseMissing('messages', [
+        'id' => 5
+    ]);  
         $response->assertStatus(200);
         //->assertJsonStructure(['id','subject','text','created_at', 'updated_at','from_id','from_first','from_last','isRead']);   //No error  
     }
 
-    //Get all testing
-    public function testMessageGetAllTwoMessagesTwoSenders() {
-        $this->signup(["email"=>"sergi.redorta1@hotmail.com", "mobile"=>"0623133222"]); //1
-        $user = User::all()->last();
-        $account = new Account;
-        $account->user_id = $user->id;
-        $account->key = Helper::generateRandomStr(30);
-        $account->password = Hash::make('Secure10', ['rounds' => 12]);
-        $account->access = Config::get('constants.ACCESS_MEMBER');
-        $user->accounts()->save($account); 
-
-        $this->signup(["email"=>"sergi.redorta2@hotmail.com", "mobile"=>"0623133233"]); //2
-        $user = User::all()->last();
-        $account = new Account;
-        $account->user_id = $user->id;
-        $account->key = Helper::generateRandomStr(30);
-        $account->password = Hash::make('Secure10', ['rounds' => 12]);
-        $account->access = Config::get('constants.ACCESS_MEMBER');
-        $user->accounts()->save($account); 
-
-        $this->signup(["email"=>"sergi.redorta3@hotmail.com", "mobile"=>"0623133244"]); //3
-        $this->loginAsMember(); //4
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        //USER FOR SENDS TO 1,2,3
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
-            "subject"   => "Message test",
-            "text"      => "This is a message test",
-            "to"        => ["users"=> [1,2,3]]//, "groups"=>[1]]  //Array of users and groups with IDs
-            ]);           
-
-        $result = $this->logout();
-
-        $this->token = null;
-        $response = $this->withHeaders(['Authorization' => null])->post('api/auth/login',["email"=>"sergi.redorta2@hotmail.com", "password"=>"Secure10", "access"=>"Membre"] );
-        $result =$response->json();
-        $this->token = $result['token'];
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        //USER 2 SENDS TO 1
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
-                "subject"   => "Message test2",
-                "text"      => "This is a message test2",
-                "to"        => ["users"=> [1]]//, "groups"=>[1]]  //Array of users and groups with IDs
-                ]);             
- //       dd(DB::table('message_user')->get()->toArray());
-
-        $result = $this->logout();
-
-        //CONNECT AS 1 EXPECTS 1 MESSAGE FROM USER 4 and ONE FROM 2
-        $this->token = null;
-        $response = $this->withHeaders(['Authorization' => null])->post('api/auth/login',["email"=>"sergi.redorta1@hotmail.com", "password"=>"Secure10", "access"=>"Membre"] );
-        $result =$response->json();
-        $this->token = $result['token'];
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        $response = $this->get('api/messages');
-
-        //Message exists
-        $this->assertDatabaseHas('messages', [
-            'id' => 1,
-            'text' => "This is a message test",
-        ]); 
-        $this->assertDatabaseHas('messages', [
-            'id' => 2,
-            'text' => "This is a message test2",
-        ]); 
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
-            'user_id' => 1,
-            'from_user_id' => 4
-        ]);   
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 2,
-            'user_id' => 1,
-            'from_user_id' => 2
-        ]);       
-   
-        //dd($response->json());    
-        $response->assertStatus(200);
-        //->assertJsonStructure(['id','subject','text','created_at', 'updated_at','from_id','from_first','from_last','isRead']);   //No error  
-    }
 
 
     //Get all testing
@@ -302,7 +232,7 @@ class MessageTest extends TestCase {
         $this->signup(["email"=>"sergi.redorta3@hotmail.com", "mobile"=>"0623133244"]); //3
         $this->loginAsMember(); //4
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        //USER FOR SENDS TO 1,2,3
+        //USER 4 FOR SENDS TO 1,2,3
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
             "subject"   => "Message test",
             "text"      => "This is a message test",
@@ -322,8 +252,6 @@ class MessageTest extends TestCase {
                 "text"      => "This is a message test2",
                 "to"        => ["users"=> [1]]//, "groups"=>[1]]  //Array of users and groups with IDs
                 ]);             
- //       dd(DB::table('message_user')->get()->toArray());
-
         $result = $this->logout();
 
         //CONNECT AS 1 EXPECTS 1 MESSAGE FROM USER 4 and ONE FROM 2
@@ -332,28 +260,18 @@ class MessageTest extends TestCase {
         $result =$response->json();
         $this->token = $result['token'];
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/markread', ['id'=>2]);  
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/markread', ['id'=>4]);  
+        $user = User::find(1);
+        //dd(Message::all()->toArray());
         //dd(DB::table('message_user')->get()->toArray());
         //Message exists
         $this->assertDatabaseHas('messages', [
-            'id' => 1,
-            'text' => "This is a message test",
+            'id' => 4,
+            'user_id' => 1,
+            'from_id' => 2,
+            'isRead' => true
         ]); 
-        $this->assertDatabaseHas('messages', [
-            'id' => 2,
-            'text' => "This is a message test2",
-        ]); 
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 2,
-            'isRead' => true,
-            'from_user_id' => 2
-        ]);   
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
-            'isRead' => false,
-            'from_user_id' => 4
-        ]);       
-   
+
         //dd($response->json());    
         $response->assertStatus(204);
         //->assertJsonStructure(['id','subject','text','created_at', 'updated_at','from_id','from_first','from_last','isRead']);   //No error  
@@ -383,7 +301,7 @@ class MessageTest extends TestCase {
         $this->signup(["email"=>"sergi.redorta3@hotmail.com", "mobile"=>"0623133244"]); //3
         $this->loginAsMember(); //4
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        //USER FOR SENDS TO 1,2,3
+        //USER 4 SENDS TO 1,2,3
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
             "subject"   => "Message test",
             "text"      => "This is a message test",
@@ -413,102 +331,26 @@ class MessageTest extends TestCase {
         $result =$response->json();
         $this->token = $result['token'];
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/message/delete', ['id'=>2]);  
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/message/delete', ['id'=>4]);  
+        $user = User::find(1);
+        
         //WE EXPECT ONLY MESSAGE 1 FROM USER 4 AND MESSAGE 2 NOWHERE
         //dd(DB::table('message_user')->get()->toArray());
         $this->assertDatabaseHas('messages', [
             'id' => 1,
+            'user_id' => 1,
+            'from_id' => 4,
             'text' => "This is a message test",
         ]); 
         $this->assertDatabaseMissing('messages', [
-            'id' => 2,
-            'text' => "This is a message test2",
+            'id' => 4,
+            'from_id' => 2
         ]); 
-        $this->assertDatabaseMissing('message_user', [
-            'message_id' => 2
-        ]);   
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
-            'from_user_id' => 4
-        ]);         
         $response->assertStatus(204);
     }
 
 
-    //Delete testing
-    public function testMessageDeleteTwoMessagesTwoSendersNoDeleteMessage() {
-        $this->signup(["email"=>"sergi.redorta1@hotmail.com", "mobile"=>"0623133222"]); //1
-        $user = User::all()->last();
-        $account = new Account;
-        $account->user_id = $user->id;
-        $account->key = Helper::generateRandomStr(30);
-        $account->password = Hash::make('Secure10', ['rounds' => 12]);
-        $account->access = Config::get('constants.ACCESS_MEMBER');
-        $user->accounts()->save($account); 
 
-        $this->signup(["email"=>"sergi.redorta2@hotmail.com", "mobile"=>"0623133233"]); //2
-        $user = User::all()->last();
-        $account = new Account;
-        $account->user_id = $user->id;
-        $account->key = Helper::generateRandomStr(30);
-        $account->password = Hash::make('Secure10', ['rounds' => 12]);
-        $account->access = Config::get('constants.ACCESS_MEMBER');
-        $user->accounts()->save($account); 
-
-        $this->signup(["email"=>"sergi.redorta3@hotmail.com", "mobile"=>"0623133244"]); //3
-        $this->loginAsMember(); //4
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        //USER FOR SENDS TO 1,2,3
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
-            "subject"   => "Message test",
-            "text"      => "This is a message test",
-            "to"        => ["users"=> [1,2,3]]//, "groups"=>[1]]  //Array of users and groups with IDs
-            ]);           
-
-        $result = $this->logout();
-
-        $this->token = null;
-        $response = $this->withHeaders(['Authorization' => null])->post('api/auth/login',["email"=>"sergi.redorta2@hotmail.com", "password"=>"Secure10", "access"=>"Membre"] );
-        $result =$response->json();
-        $this->token = $result['token'];
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        //USER 2 SENDS TO 1
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->post('api/message/send', [
-                "subject"   => "Message test2",
-                "text"      => "This is a message test2",
-                "to"        => ["users"=> [1,2]]//, "groups"=>[1]]  //Array of users and groups with IDs
-                ]);             
- //       dd(DB::table('message_user')->get()->toArray());
-
-        $result = $this->logout();
-
-        //CONNECT AS 1 EXPECTS 1 MESSAGE FROM USER 4 and ONE FROM 2
-        $this->token = null;
-        $response = $this->withHeaders(['Authorization' => null])->post('api/auth/login',["email"=>"sergi.redorta1@hotmail.com", "password"=>"Secure10", "access"=>"Membre"] );
-        $result =$response->json();
-        $this->token = $result['token'];
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->get('api/auth/user');
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])->delete('api/message/delete', ['id'=>2]);  
-        //WE EXPECT ONLY MESSAGE 1 FROM USER 4 AND MESSAGE 2 NOWHERE
-        //dd(DB::table('message_user')->get()->toArray());
-        $this->assertDatabaseHas('messages', [
-            'id' => 1,
-            'text' => "This is a message test",
-        ]); 
-        $this->assertDatabaseHas('messages', [
-            'id' => 2,
-            'text' => "This is a message test2",
-        ]); 
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 2,
-            'user_id' => 2
-        ]);   
-        $this->assertDatabaseHas('message_user', [
-            'message_id' => 1,
-            'from_user_id' => 4
-        ]);         
-        $response->assertStatus(204);
-    }
 
     //User delete, messages deleted
     public function testMessageDeleteUserDelete() {
@@ -567,26 +409,10 @@ class MessageTest extends TestCase {
         //MESSAGE 2 NOWERE
         //MESSAGE 1 NO ATTACHED TO USER 1 AS IT HAS BEEN DELETED
 
-        $this->assertDatabaseHas('messages', [
-            'id' => 1,
-            'text' => "This is a message test",
-        ]); 
         $this->assertDatabaseMissing('messages', [
-            'id' => 2,
-            'text' => "This is a message test2",
+            'user_id' => 4
         ]); 
-        $this->assertDatabaseMissing('message_user', [
-            'message_id' => 2
-        ]);   
-        $this->assertDatabaseMissing('message_user', [
-            'user_id' => 1,
-        ]);         
-        $this->assertDatabaseMissing('users', [
-            'id' => $user->id
-        ]);
-        $this->assertDatabaseMissing('accounts', [
-            'user_id' => $user->id
-        ]);        
+
         $response->assertStatus(204);
     }
 

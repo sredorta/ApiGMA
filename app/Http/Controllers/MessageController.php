@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Validator;
 use App\User;
+use App\Group;
 use App\Message;
 use App\Attachment;
 use App\kubiikslib\Helper;
@@ -21,30 +22,46 @@ class MessageController extends Controller
             'to'        => 'required|array|min:1',
             'to.users'   => 'required_without:to.groups|array|distinct',
             'to.users.*' => 'numeric|distinct|exists:users,id',
-//            'to.groups'   => 'required_without:to.users|array|distinct',
-//            'to.groups.*' => 'numeric|distinct|exists:groups,id',
+            'to.groups'   => 'required_without:to.users|array|distinct',
+            'to.groups.*' => 'numeric|distinct|exists:groups,id',
 
         ]);      
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }
+        if (array_key_exists('users', $request->get('to')))
+            $to_users = $request->get('to')['users'];
+        else 
+            $to_users = [];
+           
+        if (array_key_exists('groups', $request->get('to')))
+            $to_groups = $request->get('to')['groups'];
+        else 
+            $to_groups = [];
 
-        //TODO merge groups and users to get unique list !!!!!!!!!!!!!!
-        $to_users = $request->get('to')['users'];
-        //$to_groups = $request->get('to')['groups'];
+        foreach ($to_groups as $group) {
+            foreach (Group::find($group)->users()->get() as $user) {
+                if(!in_array($user->id, $to_users, true)){
+                    array_push($to_users, $user->id);     
+                }
+            }
+        }
 
         $to = $to_users; //This is for now while waiting for groups
         $from = $request->get("myUser");
 
-        $message = Message::create([
-            "subject" => $request->subject,
-            "text" => $request->text
-        ]);
-
-        //Add the data in the pivot
+        //Add the message to each to user
         $userFrom = User::find($from);
         foreach ($to as $userTo) {
-            $message->users()->save(User::find($userTo), ["from_user_id"=>$from, "from_user_first"=> $userFrom->firstName, "from_user_last"=>$userFrom->lastName, "isRead"=>false]);
+            User::find($userTo)->messages()->create([
+                "subject" => $request->subject,
+                "text" => $request->text,
+                "from_id" => $userFrom->id,
+                "from_first" => $userFrom->firstName,
+                "from_last" => $userFrom->lastName,
+                "to_user_list" => implode(",", $to_users),
+                "to_group_list" => implode(",", $to_groups)
+            ]);
         }
 
         return response()->json([], 204);
@@ -53,18 +70,9 @@ class MessageController extends Controller
     //Return our messages
     public function getAll(Request $request) {
         $user = User::find($request->get("myUser"));
-        $result = [];
-        foreach ($user->messages()->get() as $message) {
-            $pivot = $message->pivot;
-            $message->pivot = null;
-            $message->from_id = $pivot->from_user_id;
-            $message->from_first = $pivot->from_user_first;
-            $message->from_last = $pivot->from_user_last;
-            $message->isRead = $pivot->isRead;
-            array_push($result, $message);
-        }
-        return response()->json($result,200);
+        return response()->json($user->messages()->get()->toArray(),200);
     }
+
 
     //Return our messages
     public function markAsRead(Request $request) {
@@ -75,12 +83,7 @@ class MessageController extends Controller
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }      
         $user = User::find($request->get("myUser"));
-        $user->messages()->where("message_id", $request->id)->updateExistingPivot($request->id, ['isRead' => true]);
- //       dd($user->messages()->get()->toArray());
-
-  //      dd(Message::find($request->id)->users()->where("user_id", $user->id)->get()->toArray());
-        //->update(Message::find($request->id), ["isRead"=>true]);
-        //$user->messages()->where("message_id", $request->id)->update(['markAsRead' => true]);
+        $user->messages()->where("id", $request->id)->update(['isRead' => true]);
 
         return response()->json([],204);
     }    
@@ -94,12 +97,7 @@ class MessageController extends Controller
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }      
         $user = User::find($request->get("myUser"));
-        $message = Message::find($request->id);
-        $user->messages()->detach($request->id);
-        if ($message->users()->get()->count() == 0) {
-            $message->delete();
-        }
-
+        $user->messages()->where('id', $request->id)->delete();
 
         return response()->json([],204);
     }    

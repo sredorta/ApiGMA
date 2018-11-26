@@ -32,6 +32,8 @@ class AuthDeleteValidateTest extends TestCase {
         parent::tearDown();
     }
 
+
+
     //Clean database and files after delete
     public function testAuthDeleteValidCheckDataLeft() {
         $this->signup(['email'=>"test@email.com", 'mobile'=>'0623133244']);
@@ -58,10 +60,9 @@ class AuthDeleteValidateTest extends TestCase {
             'attachable_type' => User::class
         ]);
         $attachment = Attachment::all()->last()->toArray();
-        $this->assertFileNotExists(dirname(__DIR__) . '/storage/uploads/' . $attachment['file_name']);
-    
-
         $response = $this->delete('api/auth/delete');
+
+        $this->assertFileNotExists(dirname(__DIR__) . '/storage/uploads/' . $attachment['file_name']);
         $response->assertStatus(204);
         $this->assertDatabaseMissing('users', [
             'id' => $user->id
@@ -79,11 +80,9 @@ class AuthDeleteValidateTest extends TestCase {
         $this->assertDatabaseMissing('notifications', [
             'user_id' => $user->id
         ]);
-        $this->assertDatabaseMissing('message_user', [
+        $this->assertDatabaseMissing('messages', [
             'user_id' => $user->id
         ]);
-        //Message delete is done in MessageTest
-
     //TODO: Verify anything that is being added roles,groups...
     }
 

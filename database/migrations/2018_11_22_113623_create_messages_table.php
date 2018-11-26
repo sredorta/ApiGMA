@@ -15,8 +15,17 @@ class CreateMessagesTable extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->increments('id');  
+            $table->integer('user_id')->unsigned()->nullable();
+            $table->foreign('user_id')->references('id')
+                  ->on('users')->onDelete('cascade');  
+            $table->integer("from_id")->unsigned()->nullable();      
+            $table->string("from_first")->nullable();
+            $table->string("from_last")->nullable();    
+            $table->string("to_user_list",100)->nullable();
+            $table->string("to_group_list",100)->nullable();             
+            $table->boolean('isRead')->default(false);  
             $table->string('subject',100);
-            $table->string('text',1000);        
+            $table->string('text',1000); 
             $table->timestamps();
         });
     }
