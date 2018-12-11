@@ -65,7 +65,7 @@ trait AuthTrait {
             'lastName' => 'required|min:2',
             'mobile' => 'required|min:10|max:10',
             'password'=> 'required|min:4',
-            'avatar' => 'nullable|mimes:jpeg,bmp,png,gif,svg|max:2048',
+            'avatar' => 'nullable|mimes:jpeg,jpg,bmp,png,gif,svg|max:2048',   //Set it to nullable after debug
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);          
@@ -279,22 +279,25 @@ trait AuthTrait {
       
       $user = User::find($payload->get('user_id'));
       $user->account = Account::find($payload->get('account_id'))->access;
-      $avatar = $user->attachments->where('function','avatar')->first();
-      if ($avatar == null) {
-        $user->avatar = null;
+      $avatar = $user->attachments()->where('title','avatar')->get()->first();
+      if ($avatar) {
+        if ($avatar->thumbs()->get()->count() == 0)
+            $user->avatar = ["full" => ["url"=> $avatar->url]];
+        else {
+            $result = [];
+            foreach ($avatar->thumbs()->get() as $thumb) {
+                $result[$thumb->size] = ["width"=> $thumb->width, "height"=>$thumb->height, "url"=>$thumb->url];
+            }
+            $user->avatar = $result;
+        }
       } else {
-        $user->avatar = $avatar->filepath . $avatar->name;
+        $user->avatar = null;
       }
-      //Return all data
-      /*$profile = Profile::with('roles')->with('groups')->with('notifications')->with('products')->find($user->profile_id);
-      $notifsCount = Notification::where('profile_id', $user->profile_id)->where('isRead', 0)->count();
-      $profile->access = $user->access;
-      $profile->notifsUnreadCount = $notifsCount;*/
-      /*return response()
-      ->json([
-          'response' => 'error',
-          'message' => $payload->get('user_id')
-      ], 400);   */
+      $user->notifications = $user->notifications()->where('isRead',false)->get()->count();
+      $user->messages = $user->messages()->where('isRead',false)->get()->count();
+      $user->roles = $user->roles()->get()->pluck('name');
+      $user->groups = $user->groups()->get()->pluck('name');
+
       return response()->json($user,200);    
   } 
 

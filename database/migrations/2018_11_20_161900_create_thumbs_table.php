@@ -18,7 +18,7 @@ class CreateThumbsTable extends Migration
             $table->integer('attachment_id')->unsigned();
             $table->foreign('attachment_id')->references('id')->on('attachments')->onDelete('cascade');                    
             $table->string('url');
-            $table->integer('size')->unsigned();
+            $table->string('size');
             $table->integer('width')->unsigned();     //Type if is document or image...
             $table->integer('height')->unsigned();
             $table->integer('file_size')->unsigned();

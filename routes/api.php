@@ -40,7 +40,7 @@ Route::group(['middleware' => 'registered'], function ($router) {
     Route::post('auth/update', 'AccountController@update'); 
     Route::delete('auth/delete', 'AccountController@delete'); 
     //Notifications part
-    Route::delete('notifications/delete', 'NotificationController@delete');
+    Route::post('notifications/delete', 'NotificationController@delete');
     Route::post('notifications/markread', 'NotificationController@markAsRead');
     Route::get('notifications', 'NotificationController@getAll');
     //  auth/delete

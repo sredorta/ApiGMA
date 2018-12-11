@@ -24,7 +24,8 @@ class NotificationController extends Controller
            } else  {
                 return response()->json(['response'=>'error', 'message'=>__('notification.missing')], 400);     
            }
-           return response()->json(null, 204);
+           $notifications = Notification::where('user_id', $request->get('myUser'))->orderBy('created_at','DESC')->get();
+           return response()->json($notifications, 200);
         }
    
     //Delete the notification
@@ -44,7 +45,8 @@ class NotificationController extends Controller
           }
           $notification->isRead = true;
           $notification->save();
-          return response()->json(null, 204);
+          $notifications = Notification::where('user_id', $request->get('myUser'))->orderBy('created_at','DESC')->get();
+          return response()->json($notifications, 200);
         }    
    
     //Delete the notification
